@@ -1,0 +1,57 @@
+# =============================================================================
+# docker-compose.yml — OmniResolve-AI
+# Kompatibel dengan: docker compose v2, podman-compose
+# Usage (local): podman-compose up --build
+# Usage (prod):  docker compose up --build -d
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL + pgvector
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: omni_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-omni_resolve}
+      POSTGRES_USER: ${POSTGRES_USER:-omni_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-omni_user} -d ${POSTGRES_DB:-omni_resolve}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # FastAPI — Backend + LangGraph Orchestrator
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: omni_api
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_HOST: postgres
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src  # Hot-reload di dev (override di prod)
+
+volumes:
+  postgres_data:
+    driver: local

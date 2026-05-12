@@ -1,0 +1,23 @@
+# =============================================================================
+# docker-compose.override.yml — Override untuk Local Development
+# File ini otomatis di-merge oleh docker-compose / podman-compose
+# Mengaktifkan: hot-reload, port debug, volume mount
+# =============================================================================
+
+services:
+  api:
+    # Di dev, jalankan dengan reload
+    command: ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    user: root  # Podman: hindari permission issue dari volume mount di dev
+    environment:
+      ENVIRONMENT: development
+      LOG_LEVEL: DEBUG
+      PYTHONPATH: /app
+    volumes:
+      - ./src:/app/src:Z  # :Z = SELinux relabel (Fedora/RHEL required)
+      - ./tests:/app/tests:Z
+
+  postgres:
+    # Expose port hanya di lokal (agar bisa akses dari host dengan tools seperti DBeaver)
+    ports:
+      - "5432:5432"
