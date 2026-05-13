@@ -231,6 +231,28 @@ Arahkan frontend atau tool apapun ke backend ini:
 
 ---
 
+## 🗄️ Database Management (Seed Data Qhomemart)
+
+Proyek ini telah dilengkapi dengan skema tabel (ERP/CRM) dan data *dummy* spesifik Qhomemart. File-file ini berada di:
+- `db/init.sql` (Skema Tabel: customers, products, orders, dll)
+- `db/seed.sql` (Isian Data: Budi Hartono, Cat Dulux, Kloset, dll)
+
+Jika teman Anda ingin me-reset isi database atau mengeksekusi ulang data *seed* ini (misalnya setelah mengubah kode di `seed.sql`), jalankan perintah berikut di terminal:
+
+```bash
+# Untuk pengguna Podman:
+podman exec -i omni_postgres psql -U omni_user -d omni_resolve < db/init.sql
+podman exec -i omni_postgres psql -U omni_user -d omni_resolve < db/seed.sql
+
+# Untuk pengguna Docker:
+docker exec -i omni_postgres psql -U omni_user -d omni_resolve < db/init.sql
+docker exec -i omni_postgres psql -U omni_user -d omni_resolve < db/seed.sql
+```
+
+*Catatan: `seed.sql` dirancang aman untuk dijalankan berulang kali (menggunakan perintah `TRUNCATE`).*
+
+---
+
 ## 🧪 Demo Scenarios
 
 ```bash
