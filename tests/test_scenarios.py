@@ -35,7 +35,7 @@ async def test_health_check():
 @pytest.mark.asyncio
 async def test_kasus_a_pelanggan_baru():
     """
-    Kasus A: Skenario Qhomemart - Barang murah salah warna.
+    Kasus A: Pelanggan baru dengan barang murah.
     Ekspektasi: sistem memilih kompensasi konservatif (voucher).
     """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -43,8 +43,9 @@ async def test_kasus_a_pelanggan_baru():
             "/api/v1/complaints",
             json={
                 "message": (
-                    "Halo Qhomemart, saya beli Cat Dulux (Order ORD-QHM-003) kok warnanya salah? "
-                    "Pesan putih datang kuning. Saya CUST-002."
+                    "Halo, saya baru pertama kali beli di sini. "
+                    "Rak dinding saya (ORD-003) warnanya tidak sesuai foto. "
+                    "Customer ID saya CUST-002. Minta tolong diproses."
                 ),
                 "session_id": "test-kasus-a-001",
             },
@@ -64,17 +65,18 @@ async def test_kasus_a_pelanggan_baru():
 @pytest.mark.asyncio
 async def test_kasus_b_pelanggan_setia():
     """
-    Kasus B: Skenario Qhomemart - Barang mahal rusak saat dikirim.
-    Ekspektasi: sistem memilih penggantian barang atau refund, dan butuh HITL Supervisor.
+    Kasus B: Pelanggan setia dengan barang mahal rusak.
+    Ekspektasi: sistem memilih penggantian barang atau refund.
     """
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/v1/complaints",
             json={
                 "message": (
-                    "Sofa pesanan saya hancur dan basah semua pas sampai! "
-                    "Terpal pickup kurirnya bocor katanya. Minta ganti baru sekarang juga! "
-                    "Order ORD-QHM-005, Customer CUST-001."
+                    "Sofa yang saya beli (ORD-004) datang dalam kondisi sangat rusak! "
+                    "Kainnya robek dan rangkanya bengkok. Saya sudah belanja di sini lebih dari 20 kali "
+                    "dan ini sangat mengecewakan. Customer ID: CUST-001. "
+                    "Saya minta ganti barang baru atau uang kembali."
                 ),
                 "session_id": "test-kasus-b-001",
             },

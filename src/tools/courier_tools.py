@@ -6,40 +6,25 @@ import asyncio
 
 
 MOCK_COURIER_LOGS = {
-    # Cat Tembok Eksterior - Terkirim aman, tapi komplain salah warna (dari sisi kurir aman)
-    "ORD-QHM-003": {
-        "tracking_id": "QHM-DEL-8821345",
+    "ORD-001": {
+        "tracking_id": "JNE-8821345",
         "status": "delivered",
-        "last_update": "2026-05-12 16:45",
+        "last_update": "2026-05-09 16:45",
         "events": [
-            {"time": "2026-05-12 08:00", "status": "Barang diambil dari Gudang Qhomemart Jogja", "location": "Yogyakarta"},
-            {"time": "2026-05-12 10:30", "status": "Dalam perjalanan (Armada Internal)", "location": "Sleman"},
-            {"time": "2026-05-12 16:45", "status": "Terkirim — diterima oleh: Bpk. Supri", "location": "Sleman"},
+            {"time": "2026-05-07 08:00", "status": "Paket diambil dari gudang", "location": "Jakarta Barat"},
+            {"time": "2026-05-08 10:30", "status": "Dalam perjalanan", "location": "Tangerang"},
+            {"time": "2026-05-09 16:45", "status": "Terkirim — diterima oleh: Budi H.", "location": "Jakarta Selatan"},
         ],
         "condition_on_pickup": "intact",
     },
-    # Kloset Duduk - Terkirim tapi ada laporan retak dari kurir/kargo
-    "ORD-QHM-004": {
-        "tracking_id": "CARGO-5590234",
+    "ORD-004": {
+        "tracking_id": "JNT-5590234",
         "status": "delivered_with_damage_report",
-        "last_update": "2026-05-11 14:20",
+        "last_update": "2026-05-10 14:20",
         "events": [
-            {"time": "2026-05-09 09:00", "status": "Paket diambil dari Gudang Qhomemart", "location": "Yogyakarta"},
-            {"time": "2026-05-10 20:15", "status": "Hub transit kargo — indikasi benturan ringan", "location": "Semarang"},
-            {"time": "2026-05-11 14:20", "status": "Terkirim — ada laporan packing kayu sedikit rusak", "location": "Magelang"},
-        ],
-        "condition_on_pickup": "intact",
-        "damage_reported_by_courier": True,
-    },
-    # Sofa - Terkirim pakai armada internal tapi basah/rusak di jalan
-    "ORD-QHM-005": {
-        "tracking_id": "QHM-DEL-9993331",
-        "status": "delivered_with_damage_report",
-        "last_update": "2026-05-13 10:00",
-        "events": [
-            {"time": "2026-05-13 08:00", "status": "Barang dimuat ke pickup Qhomemart", "location": "Yogyakarta"},
-            {"time": "2026-05-13 09:30", "status": "Terkena hujan lebat di perjalanan, terpal bocor", "location": "Bantul"},
-            {"time": "2026-05-13 10:00", "status": "Terkirim — catatan: basah/kotor", "location": "Bantul"},
+            {"time": "2026-05-08 09:00", "status": "Paket diambil dari gudang", "location": "Bekasi"},
+            {"time": "2026-05-09 20:15", "status": "Hub transit — paket dipindahkan", "location": "Karawang"},
+            {"time": "2026-05-10 14:20", "status": "Terkirim — ada laporan kemasan rusak", "location": "Depok"},
         ],
         "condition_on_pickup": "intact",
         "damage_reported_by_courier": True,
