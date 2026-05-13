@@ -8,17 +8,12 @@ Dua skenario utama yang disiapkan untuk demo kepada juri:
 Jalankan: pytest tests/ -v
 """
 import pytest
-import asyncio
 from httpx import AsyncClient, ASGITransport
 
 from src.api.main import app
 
 
-@pytest.fixture(scope="module")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+# event_loop fixture → dipindahkan ke conftest.py
 
 
 @pytest.mark.asyncio
