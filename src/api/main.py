@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import get_settings
-from src.api.routers import complaints, health, chat, telegram_webhook
+from src.api.routers import complaints, health, chat, telegram_webhook, diagnostic
 
 logger = structlog.get_logger(__name__)
 settings = get_settings()
@@ -102,3 +102,4 @@ app.include_router(health.router, tags=["System"])
 app.include_router(complaints.router, prefix="/api/v1", tags=["Complaints"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat (OpenAI-compatible)"])
 app.include_router(telegram_webhook.router, prefix="/api/v1", tags=["Telegram"])
+app.include_router(diagnostic.router, prefix="/api/v1", tags=["Diagnostic"])
