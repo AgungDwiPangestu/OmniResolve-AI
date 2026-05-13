@@ -231,21 +231,57 @@ Arahkan frontend atau tool apapun ke backend ini:
 
 ---
 
-## 🧪 Demo Scenarios
+## 🛠️ Testing & Debugging
+
+Gunakan perintah `curl` berikut untuk mengetes sistem Anda secara langsung dari terminal. Semua perintah ini aman karena tidak mengekspos API Key Anda (key diambil otomatis dari `.env` oleh server).
+
+### 1. Cek Diagnostik (LLM, DB, Telegram)
+Pastikan semua organ vital sistem tersambung:
+```bash
+curl -s http://localhost:8000/api/v1/diagnostic | python3 -m json.tool
+```
+
+### 2. Kirim Komplain (Full Multi-Agent Pipeline)
+Menjalankan alur 4 agen (Liaison → Auditor → Negotiator → Orchestrator).
+
+**Skenario A: Cat Tembok Salah Warna (Barang Murah)**
+```bash
+curl -X POST http://localhost:8000/api/v1/complaints \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Halo Qhomemart, saya beli Cat Dulux (Order ORD-QHM-003) kok warnanya salah? Pesan putih datang kuning. Saya CUST-002."
+  }' | python3 -m json.tool
+```
+
+**Skenario B: Sofa Mahal Rusak Kena Hujan (Barang Mahal, HITL Supervisor Trigger)**
+```bash
+curl -X POST http://localhost:8000/api/v1/complaints \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Sofa pesanan saya hancur dan basah semua pas sampai! Terpal pickup kurirnya bocor katanya. Minta ganti baru sekarang juga! Order ORD-QHM-005, Customer CUST-001."
+  }' | python3 -m json.tool
+```
+
+### 3. Chat Langsung (OpenAI Compatible)
+Tes respon LLM secara langsung (berguna untuk integrasi ke frontend lain).
+```bash
+curl -X POST http://localhost:8000/api/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "omni-resolve-ai",
+    "messages": [{"role": "user", "content": "Tes koneksi. Siapa namamu?"}]
+  }' | python3 -m json.tool
+```
+
+---
+
+## 🧪 Unit Testing
+
+Untuk pengujian otomatis yang lebih mendalam:
 
 ```bash
-# Jalankan semua test
+# Jalankan semua skenario test (Kasus A & B)
 pytest tests/ -v
-
-# Test via curl — Kasus A (pelanggan baru, barang murah)
-curl -X POST http://localhost:8000/api/v1/complaints \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Rak dinding saya warnanya salah. Order ORD-003. Customer CUST-002."}'
-
-# Test via curl — Kasus B (pelanggan setia, barang mahal rusak)
-curl -X POST http://localhost:8000/api/v1/complaints \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Sofa saya rusak parah waktu diterima! Order ORD-004, Customer CUST-001."}'
 ```
 
 ---

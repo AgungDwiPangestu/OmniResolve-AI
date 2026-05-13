@@ -9,13 +9,23 @@ from src.graph.state import CustomerProfile
 
 
 # ---------------------------------------------------------------------------
-# Mock data store
+# Mock data store - QHOMEMART SCENARIOS
 # ---------------------------------------------------------------------------
 MOCK_INVENTORY = {
-    "ORD-001": {"product_name": "Lemari Kayu 3 Pintu", "price_idr": 2_500_000, "stock": 3, "condition": "good"},
-    "ORD-002": {"product_name": "Meja Makan 4 Kursi", "price_idr": 1_800_000, "stock": 0, "condition": "depleted"},
-    "ORD-003": {"product_name": "Rak Dinding 5 Layer", "price_idr": 350_000, "stock": 15, "condition": "good"},
-    "ORD-004": {"product_name": "Sofa 3 Seater", "price_idr": 4_200_000, "stock": 1, "condition": "damaged_in_warehouse"},
+    # 1. Normal order - Granit Lantai
+    "ORD-QHM-001": {"product_name": "Granit Lantai Niro Granite 60x60 (Dus)", "price_idr": 250_000, "stock": 50, "condition": "good"},
+    
+    # 2. Out of stock - Semen Instan
+    "ORD-QHM-002": {"product_name": "Semen Instan Mortar Utama (MU-380) 40kg", "price_idr": 85_000, "stock": 0, "condition": "depleted"},
+    
+    # 3. Skenario Salah Barang / Salah Warna - Cat Tembok Eksterior
+    "ORD-QHM-003": {"product_name": "Cat Tembok Dulux Weathershield 20L (Brilliant White)", "price_idr": 1_850_000, "stock": 12, "condition": "good"},
+    
+    # 4. Skenario Pecah/Retak saat pengiriman - Sanitary Kloset Duduk
+    "ORD-QHM-004": {"product_name": "Kloset Duduk Toto Eco Washer Tipe CW421J", "price_idr": 2_400_000, "stock": 5, "condition": "damaged_in_warehouse"},
+
+    # 5. Skenario Rusak Parah (Barang Mahal) - Hit threshold Human-in-the-Loop (> Rp 1jt)
+    "ORD-QHM-005": {"product_name": "Sofa Minimalis L-Shape Fabric (Abu-abu)", "price_idr": 5_500_000, "stock": 2, "condition": "damaged_in_warehouse"},
 }
 
 MOCK_CUSTOMERS = {
@@ -23,17 +33,25 @@ MOCK_CUSTOMERS = {
         "customer_id": "CUST-001",
         "customer_name": "Budi Hartono",
         "is_loyal": True,
-        "lifetime_value_idr": 15_000_000.0,
-        "total_orders": 23,
+        "lifetime_value_idr": 25_000_000.0,  # Sering belanja bahan bangunan/renovasi
+        "total_orders": 12,
         "previous_complaints": 1,
     },
     "CUST-002": {
         "customer_id": "CUST-002",
         "customer_name": "Sari Dewi",
         "is_loyal": False,
-        "lifetime_value_idr": 250_000.0,
+        "lifetime_value_idr": 1_850_000.0,
         "total_orders": 2,
         "previous_complaints": 0,
+    },
+    "CUST-003": {
+        "customer_id": "CUST-003",
+        "customer_name": "Kontraktor Jaya Abadi",
+        "is_loyal": True,
+        "lifetime_value_idr": 150_000_000.0, # Akun B2B / Kontraktor
+        "total_orders": 45,
+        "previous_complaints": 2,
     },
     "CUST-999": {
         "customer_id": "CUST-999",
