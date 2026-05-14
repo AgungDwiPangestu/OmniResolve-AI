@@ -1,45 +1,83 @@
 """
-src/tools/erp_tools.py — Mock ERP API Tools
-Production: integrasi dengan SAP, Odoo, atau sistem ERP internal.
+src/tools/erp_tools.py — ERP API Tools
+Berkomunikasi langsung dengan database PostgreSQL.
 """
 import asyncio
 import random
+import asyncpg
+import structlog
+from src.config import get_settings
+
+logger = structlog.get_logger(__name__)
+
+async def get_db_connection():
+    settings = get_settings()
+    return await asyncpg.connect(
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        database=settings.postgres_db
+    )
 
 
 async def update_erp_stock(order_id: str, action: str = "reserve_replacement") -> dict:
     """
-    Update stok di sistem ERP.
+    Update stok atau status di sistem ERP (Database).
     Action: "reserve_replacement" | "process_refund" | "write_off"
     """
-    await asyncio.sleep(0.15)  # Simulasi API latency ERP
+    try:
+        conn = await get_db_connection()
+        
+        if action == "reserve_replacement":
+            # Cek produk dari order_id
+            query_product = """
+                SELECT p.product_id, p.stock_available 
+                FROM orders o
+                JOIN order_items oi ON o.order_id = oi.order_id
+                JOIN products p ON oi.product_id = p.product_id
+                WHERE o.order_id = $1 LIMIT 1
+            """
+            product = await conn.fetchrow(query_product, order_id)
+            
+            if product and product["stock_available"] > 0:
+                # Kurangi stok
+                await conn.execute("UPDATE products SET stock_available = stock_available - 1 WHERE product_id = $1", product["product_id"])
+                await conn.close()
+                return {
+                    "success": True,
+                    "message": f"Stok pengganti berhasil direservasi untuk {order_id}",
+                    "reserved_quantity": 1,
+                    "erp_reference": f"ERP-{order_id}-RPL",
+                }
+            else:
+                await conn.close()
+                return {
+                    "success": False,
+                    "message": f"Stok habis untuk produk terkait {order_id}. Perlu PO ke supplier.",
+                    "stock_available": 0,
+                }
 
-    if action == "reserve_replacement":
-        if random.random() < 0.8:  # 80% stok tersedia
+        elif action == "process_refund":
+            # Update status order ke refunded
+            await conn.execute("UPDATE orders SET status = 'refunded' WHERE order_id = $1", order_id)
+            await conn.close()
             return {
                 "success": True,
-                "message": f"Stok pengganti berhasil direservasi untuk {order_id}",
-                "reserved_quantity": 1,
-                "erp_reference": f"ERP-{order_id}-RPL",
+                "message": f"Proses refund diinisiasi untuk {order_id}. Estimasi 3-5 hari kerja.",
+                "refund_reference": f"REF-{order_id}-{random.randint(1000, 9999)}",
             }
-        else:
+
+        elif action == "write_off":
+            await conn.close()
             return {
-                "success": False,
-                "message": f"Stok habis untuk produk terkait {order_id}. Perlu PO ke supplier.",
-                "stock_available": 0,
+                "success": True,
+                "message": f"Item {order_id} dicatat sebagai write-off di sistem.",
             }
 
-    elif action == "process_refund":
-        return {
-            "success": True,
-            "message": f"Proses refund diinisiasi untuk {order_id}. Estimasi 3-5 hari kerja.",
-            "refund_reference": f"REF-{order_id}-{random.randint(1000, 9999)}",
-        }
-
-    elif action == "write_off":
-        return {
-            "success": True,
-            "message": f"Item {order_id} dicatat sebagai write-off di sistem.",
-        }
+    except Exception as e:
+        logger.error("db.erp_error", error=str(e))
+        return {"success": False, "message": f"Database error: {e}"}
 
     return {"success": False, "message": f"Unknown ERP action: {action}"}
 
@@ -47,10 +85,8 @@ async def update_erp_stock(order_id: str, action: str = "reserve_replacement") -
 async def trigger_purchase_order(order_id: str) -> dict:
     """
     Trigger Purchase Order ke supplier ketika stok pengganti habis.
-    Self-correction: dipanggil otomatis oleh Orchestrator saat ERP stok kosong.
     """
     await asyncio.sleep(0.2)
-
     supplier_id = f"SUP-{random.randint(100, 999)}"
     po_number = f"PO-{order_id}-{random.randint(10000, 99999)}"
 

@@ -61,6 +61,13 @@ class Settings(BaseSettings):
     hitl_threshold_idr: float = 1_000_000.0  # Rp 1.000.000
     supervisor_webhook_url: str = "https://hooks.example.com/supervisor"
 
+    # --- SMTP Email Notifications ---
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    smtp_from: str = "OmniResolve AI <noreply@example.com>"
+
     # --- App ---
     environment: str = "development"
     log_level: str = "INFO"
