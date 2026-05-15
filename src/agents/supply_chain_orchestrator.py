@@ -184,7 +184,7 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
         f"APPROVAL REQUIRED — OmniResolve-AI\n\n"
         f"Session ID: {session_id}\n"
         f"Keputusan AI: {decision['decision_type'] if decision else 'unknown'}\n"
-        f"Nilai Kompensasi: Rp {decision['compensation_value_idr']:,.0f if decision else 0}\n\n"
+        f"Nilai Kompensasi: Rp {(decision['compensation_value_idr'] if decision else 0):,.0f}\n\n"
         f"Alasan (Reasoning):\n{decision['reasoning'] if decision else '-'}\n\n"
         f"Silakan login ke dashboard untuk melakukan approval."
     )
@@ -226,7 +226,7 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Total Nilai</strong></td>
-                            <td style="padding: 8px 0; color: #e63946; font-size: 16px; font-weight: bold;">Rp {decision['compensation_value_idr']:,.0f if decision else 0}</td>
+                            <td style="padding: 8px 0; color: #e63946; font-size: 16px; font-weight: bold;">Rp {(decision['compensation_value_idr'] if decision else 0):,.0f}</td>
                         </tr>
                     </table>
                 </div>

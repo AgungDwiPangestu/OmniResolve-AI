@@ -95,7 +95,15 @@ CCTV Metadata (simulasi):
 
     try:
         response = await llm.ainvoke(messages)
-        result = json.loads(response.content)
+        content = response.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        elif content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        result = json.loads(content)
 
         audit_result: AuditResult = {
             "claim_valid": result.get("claim_valid"),

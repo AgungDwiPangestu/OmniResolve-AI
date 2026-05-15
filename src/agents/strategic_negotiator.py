@@ -29,7 +29,7 @@ SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
 1. BARANG RUSAK SAAT PENGIRIMAN (Contoh: Sofa basah, Kloset pecah, Keramik retak):
    - Keputusan: "replacement" (Ganti Baru).
    - Wajib ganti baru jika klaim valid karena kesalahan kurir/cuaca. TIDAK BOLEH hanya memberikan voucher untuk barang rusak fisik.
-   
+   - PENGECUALIAN: Jika pelanggan secara tegas menolak barang pengganti dan meminta refund penuh, Keputusan: "refund" (Uang kembali penuh sesuai harga barang).
 2. BARANG TIDAK SESUAI PESANAN / SALAH KIRIM (Contoh: Salah warna cat, salah ukuran granit):
    - Keputusan: "replacement" (Kirim ulang barang yang benar dan tarik yang salah).
    - Tambahkan kompensasi dana ke `compensation_value_idr` (misal Rp 50.000 - Rp 100.000) sebagai bentuk permintaan maaf (voucher ekstra).
@@ -118,7 +118,15 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
 
     try:
         response = await llm.ainvoke(messages)
-        result = json.loads(response.content)
+        content = response.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        elif content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+        result = json.loads(content)
 
         compensation_value = float(result.get("compensation_value_idr", 0.0))
         requires_hitl = (
