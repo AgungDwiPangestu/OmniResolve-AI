@@ -18,17 +18,20 @@ from src.tools.courier_tools import dispatch_courier
 
 logger = structlog.get_logger(__name__)
 
-RESPONSE_COMPOSER_PROMPT = """Kamu adalah Response Composer OmniResolve-AI.
-Susun pesan AKHIR yang akan dikirimkan kepada pelanggan.
+RESPONSE_COMPOSER_PROMPT = """Kamu adalah Senior Customer Relationship Manager Qhomemart.
+Tugasmu adalah merangkai pesan akhir yang sangat profesional, empatis, dan SOLUTIF.
 
-Pesan harus:
-- Empatik dan profesional
-- Menjelaskan dengan JELAS apa yang akan dilakukan perusahaan
-- Memberikan perkiraan waktu penyelesaian
-- Tidak menggunakan bahasa teknis/jargon
-- Menggunakan Bahasa Indonesia yang natural
+PANDUAN PENULISAN:
+1. GREETING PERSONAL: Gunakan "Yth. Bapak/Ibu [Nama]" (ambil dari customer_profile). Jika pelanggan setia (is_loyal=true), tambahkan apresiasi atas loyalitasnya.
+2. EMPATI TINGGI: Jika sentiment pelanggan negatif, gunakan bahasa yang lebih menenangkan. Contoh: "Kami sangat memahami kekecewaan Anda..."
+3. STRUKTUR JELAS:
+   - Jika keputusan adalah "multi_choice": Sajikan pilihan solusi dengan nomor (1, 2) agar pelanggan mudah memilih. Berikan rekomendasi mana yang terbaik bagi mereka (misal: Voucher 110% lebih untung).
+   - Jika keputusan tunggal: Jelaskan langkah selanjutnya dan estimasi waktu secara spesifik (misal: 2x24 jam kerja).
+4. CALL TO ACTION (CTA): 
+   - Akhiri dengan instruksi yang jelas (misal: "Ketik angka 1 atau 2 untuk memilih solusi").
+   - Berikan informasi bahwa tim kami siap membantu kapan saja.
 
-Format: Plain text, bukan JSON."""
+DILARANG: Menggunakan bahasa kaku/robotic, memberikan janji palsu, atau menyalahkan pelanggan."""
 
 
 def get_llm():
@@ -119,7 +122,15 @@ async def supply_chain_orchestrator_node(state: GraphState) -> dict:
     }
 
     # --- Compose final response untuk pelanggan ---
+    cp = state.get("customer_profile") or {}
+    customer_name = cp.get("customer_name", "Pelanggan")
+    order_id = complaint.get("order_id", "N/A")
+    complaint_desc = complaint.get("complaint_description", "")
+    
     response_context = f"""
+Nama Pelanggan: {customer_name}
+Order ID: {order_id}
+Keluhan: {complaint_desc}
 Keputusan: {decision['decision_type']}
 Nilai kompensasi: Rp {decision['compensation_value_idr']:,.0f}
 Aksi berhasil: {', '.join(actions_taken) if actions_taken else 'tidak ada'}
@@ -170,6 +181,8 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
     settings = get_settings()
     decision = state.get("compensation_decision")
     session_id = state["session_id"]
+    audit = state.get("audit_result")
+    profile = state.get("customer_profile")
 
     logger.info(
         "hitl.triggered",
@@ -179,13 +192,18 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
 
     subject = f"[OmniResolve-AI] ⚠️ Tindakan Diperlukan: Approval Kompensasi (ID: {session_id[:8]})"
     
+    # Pre-compute values
+    d_type = decision['decision_type'] if decision else 'unknown'
+    d_value = decision['compensation_value_idr'] if decision else 0
+    d_reasoning = decision['reasoning'] if decision else '-'
+
     # Fallback plain text
     text_body = (
         f"APPROVAL REQUIRED — OmniResolve-AI\n\n"
         f"Session ID: {session_id}\n"
-        f"Keputusan AI: {decision['decision_type'] if decision else 'unknown'}\n"
-        f"Nilai Kompensasi: Rp {(decision['compensation_value_idr'] if decision else 0):,.0f}\n\n"
-        f"Alasan (Reasoning):\n{decision['reasoning'] if decision else '-'}\n\n"
+        f"Keputusan AI: {d_type}\n"
+        f"Nilai Kompensasi: Rp {d_value:,.0f}\n\n"
+        f"Alasan (Reasoning):\n{d_reasoning}\n\n"
         f"Silakan login ke dashboard untuk melakukan approval."
     )
 
@@ -222,11 +240,11 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Rekomendasi AI</strong></td>
-                            <td style="padding: 8px 0; color: #2b2d42; font-size: 14px; text-transform: uppercase; font-weight: bold;">{decision['decision_type'] if decision else 'UNKNOWN'}</td>
+                            <td style="padding: 8px 0; color: #2b2d42; font-size: 14px; text-transform: uppercase; font-weight: bold;">{d_type}</td>
                         </tr>
                         <tr>
                             <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Total Nilai</strong></td>
-                            <td style="padding: 8px 0; color: #e63946; font-size: 16px; font-weight: bold;">Rp {(decision['compensation_value_idr'] if decision else 0):,.0f}</td>
+                            <td style="padding: 8px 0; color: #e63946; font-size: 16px; font-weight: bold;">Rp {d_value:,.0f}</td>
                         </tr>
                     </table>
                 </div>
@@ -234,16 +252,14 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
                 <!-- Reasoning Box -->
                 <h3 style="color: #1d3557; font-size: 16px; margin-bottom: 10px;">Analisis & Chain of Thought AI:</h3>
                 <div style="background-color: #edf2f4; padding: 15px; border-radius: 6px; color: #4a4e69; font-size: 14px; line-height: 1.6; font-style: italic;">
-                    "{decision['reasoning'] if decision else 'Tidak ada alasan yang diberikan.'}"
+                    "{d_reasoning}"
                 </div>
 
                 <!-- Call to Action -->
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="http://127.0.0.1:8000/api/v1/complaints/approve/{session_id}?action=approve" style="background-color: #2a9d8f; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block; margin-right: 10px;">✅ Setujui (Approve)</a>
-                    <a href="http://127.0.0.1:8000/api/v1/complaints/approve/{session_id}?action=reject" style="background-color: #6c757d; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">❌ Tolak (Reject)</a>
-                </div>
-                <div style="text-align: center; margin-top: 15px;">
-                    <a href="https://qhomemart-dashboard.omniresolve.ai/approval/{session_id}" style="color: #457b9d; text-decoration: underline; font-size: 12px;">Lihat detail lengkap di Dashboard</a>
+                    <a href="{settings.base_url}/?approve_session={session_id}" style="background-color: #2a9d8f; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
+                        🚀 Tinjau & Ambil Keputusan di Dashboard
+                    </a>
                 </div>
             </div>
             
