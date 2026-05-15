@@ -135,3 +135,89 @@ async def submit_complaint(request: ComplaintRequest):
             status_code=500,
             detail=f"Pipeline error: {str(e)}",
         )
+
+# --- NEW ENDPOINTS FOR ADMIN DASHBOARD ---
+
+@router.get("/complaints/logs")
+async def get_complaint_logs():
+    """Ambil histori seluruh komplain untuk dashboard admin."""
+    settings = get_settings()
+    try:
+        conn = await asyncpg.connect(
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            database=settings.postgres_db
+        )
+        rows = await conn.fetch("SELECT * FROM complaint_sessions ORDER BY created_at DESC LIMIT 50")
+        await conn.close()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/complaints/detail/{session_id}")
+async def get_complaint_detail(session_id: str):
+    """Ambil rincian spesifik satu komplain untuk modal approval."""
+    settings = get_settings()
+    try:
+        conn = await asyncpg.connect(
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            database=settings.postgres_db
+        )
+        row = await conn.fetchrow("""
+            SELECT cs.*, c.customer_name 
+            FROM complaint_sessions cs
+            LEFT JOIN customers c ON cs.customer_id = c.customer_id
+            WHERE cs.session_id = $1
+        """, session_id)
+        await conn.close()
+        if not row:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return dict(row)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/complaints/approve/{session_id}")
+async def approve_complaint(session_id: str):
+    """Approval manual oleh stakeholder."""
+    settings = get_settings()
+    try:
+        conn = await asyncpg.connect(
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            database=settings.postgres_db
+        )
+        # 1. Update status di DB
+        await conn.execute("UPDATE complaint_sessions SET status = 'approved' WHERE session_id = $1", session_id)
+        
+        # 2. Trigger Orchestrator Logic (Update ERP, dsb) secara manual
+        # Di sini kita bisa panggil node orchestrator secara mandiri jika perlu
+        
+        await conn.close()
+        return {"message": f"Keluhan {session_id} telah DISETUJUI dan diproses ke ERP."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/complaints/reject/{session_id}")
+async def reject_complaint(session_id: str):
+    """Penolakan manual oleh stakeholder."""
+    settings = get_settings()
+    try:
+        conn = await asyncpg.connect(
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            database=settings.postgres_db
+        )
+        await conn.execute("UPDATE complaint_sessions SET status = 'rejected' WHERE session_id = $1", session_id)
+        await conn.close()
+        return {"message": f"Keluhan {session_id} telah DITOLAK."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -102,6 +102,42 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk command /cancel."""
+    chat_id = update.effective_chat.id
+    session_manager.reset(chat_id)
+    await update.message.reply_text(
+        "🚫 Proses komplain dibatalkan. Ketik /start jika Anda ingin mengulang dari awal."
+    )
+
+
+async def cmd_faq(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk command /faq."""
+    keyboard = [
+        [InlineKeyboardButton("Kebijakan Retur", callback_data="faq_return")],
+        [InlineKeyboardButton("Jam Operasional", callback_data="faq_hours")],
+        [InlineKeyboardButton("Lacak Pengiriman", callback_data="faq_tracking")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        "❓ *Pusat Bantuan Otomatis*\nSilakan pilih topik yang ingin Anda ketahui:",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+
+async def cmd_human(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk command /human."""
+    chat_id = update.effective_chat.id
+    session = session_manager.get(chat_id)
+    session.step = ConversationStep.ESCALATED
+    await update.message.reply_text(
+        "👨‍💼 *Eskalasi ke Customer Service*\n\n"
+        "AI kami telah berhenti memproses sesi Anda. Agen CS manusia kami akan segera bergabung dalam obrolan ini. Mohon tunggu beberapa saat...",
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Handler utama untuk pesan teks dari pelanggan.
@@ -119,6 +155,13 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(WELCOME_MSG, parse_mode=ParseMode.MARKDOWN)
         return
 
+    # --- Jika status ESCALATED ---
+    if session.step == ConversationStep.ESCALATED:
+        await update.message.reply_text(
+            "⏳ Anda saat ini dalam antrean CS Manusia. AI kami dinonaktifkan sementara untuk sesi Anda."
+        )
+        return
+
     # --- Jika menunggu foto dan user skip ---
     if session.step == ConversationStep.WAITING_PHOTO and text.lower() == "skip":
         await _run_pipeline(update, context, session, chat_id)
@@ -133,26 +176,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # --- Kumpulkan data ---
     if session.step == ConversationStep.GATHERING:
-        # Coba ekstrak order ID dari teks (format ORD-XXX)
-        import re
-        order_match = re.search(r"(ORD-\w+)", text, re.IGNORECASE)
-        if order_match and not session.order_id:
-            session.order_id = order_match.group(1).upper()
-
-        # Simpan pesan sebagai complaint text
-        if not session.complaint_text:
-            session.complaint_text = text
-        else:
-            session.complaint_text += f"\n{text}"
-
-        # Jika order ID belum ada, minta
-        if not session.order_id:
-            await update.message.reply_text(ASK_ORDER_ID_MSG, parse_mode=ParseMode.MARKDOWN)
-            return
-
-        # Data sudah cukup → tanya foto
-        session.step = ConversationStep.WAITING_PHOTO
-        await update.message.reply_text(ASK_PHOTO_MSG, parse_mode=ParseMode.MARKDOWN)
+        # Pindahkan kendali percakapan ke Liaison Agent (AI)
+        await _run_liaison_only(update, context, session)
         return
 
 
@@ -198,6 +223,75 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _run_pipeline(update, context, session, chat_id)
 
 
+async def _run_liaison_only(update: Update, context: ContextTypes.DEFAULT_TYPE, session):
+    """
+    Menjalankan percakapan interaktif hanya dengan Liaison Agent.
+    AI akan mengobrol sampai data (Order ID & Keluhan) terkumpul.
+    """
+    from src.agents.liaison_agent import liaison_agent_node
+    from src.graph.state import GraphState
+    
+    chat_id = update.effective_chat.id
+    text = update.message.text
+
+    # Tampilkan status "typing..."
+    await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+
+    # Siapkan state untuk Liaison
+    state: GraphState = {
+        "messages": [],
+        "raw_input": text,
+        "complaint": {
+            "customer_id": "unknown",
+            "order_id": session.order_id or "unknown",
+            "complaint_type": "other",
+            "complaint_description": session.complaint_text or "unknown",
+            "sentiment_score": 0.0,
+            "evidence_urls": session.evidence_urls,
+        },
+        "session_id": f"liaison-{chat_id}",
+    }
+
+    # Panggil Liaison Agent
+    result = await liaison_agent_node(state)
+    complaint = result.get("complaint")
+    
+    # Update data sesi dari hasil ekstraksi AI
+    if complaint:
+        if complaint["order_id"] != "unknown":
+            session.order_id = complaint["order_id"]
+        if complaint["complaint_description"] != "unknown":
+            session.complaint_text = complaint["complaint_description"]
+
+    # Ambil balasan AI untuk pelanggan
+    # Kita butuh mengambil output JSON asli dari Liaison untuk mendapatkan 'customer_response'
+    # Karena liaison_agent_node mengembalikan dict dengan 'complaint' dan 'messages'
+    llm_message = result["messages"][0].content
+    
+    # Ekstraksi JSON dari response
+    import json, re
+    json_match = re.search(r"({.*})", llm_message, re.DOTALL)
+    ai_data = json.loads(json_match.group(1)) if json_match else {}
+    
+    ai_reply = ai_data.get("customer_response", "Maaf, bisa diulangi?")
+    is_complete = ai_data.get("data_complete", False)
+
+    # Kirim balasan interaktif AI ke Telegram
+    await update.message.reply_text(ai_reply, parse_mode=ParseMode.MARKDOWN)
+
+    # Jika AI merasa data sudah lengkap, lanjut ke tahap berikutnya
+    if is_complete and session.order_id != "unknown":
+        # Cek apakah butuh foto?
+        skip_photo_keywords = ["telat", "lambat", "lama", "kosong", "habis", "refund", "dana", "kembali", "uang"]
+        needs_photo = not any(kw in session.complaint_text.lower() for kw in skip_photo_keywords)
+
+        if needs_photo:
+            session.step = ConversationStep.WAITING_PHOTO
+            await update.message.reply_text(ASK_PHOTO_MSG, parse_mode=ParseMode.MARKDOWN)
+        else:
+            await _run_pipeline(update, context, session, chat_id)
+
+
 async def _run_pipeline(update, context, session, chat_id: int):
     """
     Internal: jalankan LangGraph pipeline dan kirim hasil ke pelanggan.
@@ -238,6 +332,11 @@ async def _run_pipeline(update, context, session, chat_id: int):
             "Tim kami akan segera menghubungi Anda."
         )
         decision = final_state.get("compensation_decision")
+        audit = final_state.get("audit_result")
+
+        # Simpan ke DB untuk Dashboard Admin
+        from src.api.routers.complaints import save_session_to_db
+        await save_session_to_db(session_id, pipeline_input, final_state)
 
         # Hapus pesan "sedang diproses"
         await processing_msg.delete()
@@ -251,14 +350,30 @@ async def _run_pipeline(update, context, session, chat_id: int):
 
         # Kirim detail keputusan (untuk transparansi)
         if decision:
+            # Emoji berdasarkan tipe keputusan
+            type_emoji = {
+                "replacement": "🔄 Ganti Baru",
+                "refund": "💰 Pengembalian Dana",
+                "voucher": "🎫 Voucher Kompensasi",
+                "reject": "❌ Klaim Ditolak",
+            }
+            decision_label = type_emoji.get(decision['decision_type'], decision['decision_type'])
+
+            # Tampilkan status audit
+            audit_status = ""
+            if audit:
+                claim_icon = "✅" if audit.get("claim_valid") else "⛔"
+                audit_status = f"\n• Validasi klaim: {claim_icon} {'Valid' if audit.get('claim_valid') else 'Tidak Valid'}"
+
             detail_text = (
                 f"📋 *Detail Keputusan:*\n"
-                f"• Tipe: `{decision['decision_type']}`\n"
-                f"• Nilai kompensasi: Rp {decision['compensation_value_idr']:,.0f}\n"
+                f"• Tipe: {decision_label}\n"
+                f"• Nilai kompensasi: Rp {decision['compensation_value_idr']:,.0f}"
+                f"{audit_status}\n"
                 f"• Ref: `{session_id}`"
             )
             if decision.get("requires_human_approval"):
-                detail_text += "\n\n⚠️ _Kasus ini memerlukan persetujuan supervisor. Kami akan menghubungi Anda dalam 1x24 jam._"
+                detail_text += "\n\n⚠️ _Kasus ini memerlukan persetujuan supervisor karena nilai kompensasi melebihi batas otomatis. Kami akan menghubungi Anda dalam 1x24 jam._"
 
             await context.bot.send_message(
                 chat_id=chat_id,
@@ -306,4 +421,18 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             "📝 *Komplain Baru*\n\nSilakan ceritakan masalah Anda:",
             parse_mode=ParseMode.MARKDOWN,
+        )
+    elif query.data.startswith("faq_"):
+        ans = ""
+        if query.data == "faq_return":
+            ans = "Syarat Retur: Maksimal 3 hari sejak barang diterima, harus disertakan video unboxing utuh tanpa terputus."
+        elif query.data == "faq_hours":
+            ans = "Jam Operasional Qhomemart:\nSenin - Minggu, 08:00 - 21:00 WIB."
+        elif query.data == "faq_tracking":
+            ans = "Lacak Pengiriman: Anda bisa mengecek resi secara langsung di website kargo terkait, atau tanyakan kepada bot ini dengan format pesan menyertakan ORD-XXX."
+        
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"💡 *Info FAQ:*\n{ans}",
+            parse_mode=ParseMode.MARKDOWN
         )
