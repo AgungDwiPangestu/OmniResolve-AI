@@ -67,7 +67,7 @@ async def get_customer_profile_mock(customer_id: str) -> CustomerProfile:
     try:
         conn = await get_db_connection()
         query = """
-            SELECT customer_name, is_loyal, lifetime_value_idr, total_orders, previous_complaints
+            SELECT customer_id, customer_name, is_loyal, lifetime_value_idr, total_orders, previous_complaints
             FROM customers
             WHERE customer_id = $1
         """
@@ -76,7 +76,7 @@ async def get_customer_profile_mock(customer_id: str) -> CustomerProfile:
         
         if row:
             return {
-                "customer_id": customer_id,
+                "customer_id": row["customer_id"],
                 "customer_name": row["customer_name"],
                 "is_loyal": row["is_loyal"],
                 "lifetime_value_idr": float(row["lifetime_value_idr"]),
@@ -93,5 +93,46 @@ async def get_customer_profile_mock(customer_id: str) -> CustomerProfile:
         "is_loyal": False,
         "lifetime_value_idr": 0.0,
         "total_orders": 1,
+        "previous_complaints": 0,
+    }
+
+
+async def get_customer_profile_by_order(order_id: str) -> CustomerProfile:
+    """
+    Ambil profil pelanggan berdasarkan ORDER ID dari database.
+    Ini adalah cara utama untuk mendapatkan profil pelanggan karena
+    pelanggan hanya tahu nomor order mereka, bukan customer_id internal.
+    """
+    try:
+        conn = await get_db_connection()
+        query = """
+            SELECT c.customer_id, c.customer_name, c.is_loyal,
+                   c.lifetime_value_idr, c.total_orders, c.previous_complaints
+            FROM orders o
+            JOIN customers c ON o.customer_id = c.customer_id
+            WHERE o.order_id = $1
+        """
+        row = await conn.fetchrow(query, order_id)
+        await conn.close()
+
+        if row:
+            return {
+                "customer_id": row["customer_id"],
+                "customer_name": row["customer_name"],
+                "is_loyal": row["is_loyal"],
+                "lifetime_value_idr": float(row["lifetime_value_idr"]),
+                "total_orders": row["total_orders"],
+                "previous_complaints": row["previous_complaints"],
+            }
+    except Exception as e:
+        logger.error("db.customer_by_order_error", order_id=order_id, error=str(e))
+
+    # Fallback jika order tidak ditemukan
+    return {
+        "customer_id": "unknown",
+        "customer_name": "Pelanggan",
+        "is_loyal": False,
+        "lifetime_value_idr": 0.0,
+        "total_orders": 0,
         "previous_complaints": 0,
     }

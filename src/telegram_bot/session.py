@@ -16,6 +16,7 @@ class ConversationStep(str, Enum):
     WAITING_PHOTO = "waiting_photo" # Menunggu foto bukti
     PROCESSING  = "processing"      # Pipeline agent sedang berjalan
     DONE        = "done"            # Selesai, siap terima komplain baru
+    ESCALATED   = "escalated"       # Menunggu respon CS Manusia
 
 
 @dataclass

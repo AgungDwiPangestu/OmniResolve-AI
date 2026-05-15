@@ -25,6 +25,9 @@ from src.telegram_bot.handlers import (
     cmd_start,
     cmd_help,
     cmd_status,
+    cmd_cancel,
+    cmd_faq,
+    cmd_human,
     handle_text,
     handle_photo,
     handle_callback,
@@ -49,6 +52,9 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("status", cmd_status))
+    app.add_handler(CommandHandler("cancel", cmd_cancel))
+    app.add_handler(CommandHandler("faq", cmd_faq))
+    app.add_handler(CommandHandler("human", cmd_human))
 
     # --- Message handlers ---
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
@@ -66,6 +72,9 @@ async def setup_bot_commands(app: Application):
     commands = [
         BotCommand("start", "Mulai komplain baru"),
         BotCommand("status", "Cek status komplain"),
+        BotCommand("cancel", "Batalkan proses komplain saat ini"),
+        BotCommand("faq", "Pusat bantuan otomatis"),
+        BotCommand("human", "Panggil CS Manusia"),
         BotCommand("help", "Bantuan penggunaan"),
     ]
     await app.bot.set_my_commands(commands)

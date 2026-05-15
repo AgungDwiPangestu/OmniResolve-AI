@@ -40,8 +40,9 @@ class CustomerProfile(TypedDict):
 
 class CompensationDecision(TypedDict):
     """Keputusan kompensasi dari Strategic Negotiator."""
-    decision_type: str           # "voucher" | "replacement" | "refund" | "reject"
+    decision_type: str           # "voucher" | "replacement" | "refund" | "reject" | "multi_choice"
     compensation_value_idr: float
+    options: list[dict[str, Any]] # Opsi tambahan untuk pelanggan
     reasoning: str               # Chain of Thought
     requires_human_approval: bool
 
