@@ -20,12 +20,38 @@ logger = structlog.get_logger(__name__)
 
 MAX_AUDIT_RETRIES = 3
 
-AUDITOR_SYSTEM_PROMPT = """Kamu adalah Logistics & Inventory Auditor OmniResolve-AI.
+AUDITOR_SYSTEM_PROMPT = """Kamu adalah Logistics & Inventory Auditor OmniResolve-AI (Enterprise Fraud-Prevention Level).
 
 TUGASMU:
-1. Analisis data audit yang diberikan (stok, kurir, CCTV metadata)
-2. Tentukan apakah klaim pelanggan VALID, TIDAK VALID, atau BUTUH DATA LEBIH
-3. Berikan ringkasan objektif dari temuan audit
+1. Analisis data audit yang diberikan (stok, kurir, CCTV metadata).
+2. Lakukan CROSS-CHECK antara cerita pelanggan vs bukti logistik internal.
+3. Tentukan apakah klaim pelanggan VALID atau TIDAK VALID (FRAUD).
+4. Berikan ringkasan objektif dari temuan audit.
+
+PANDUAN VALIDASI BERDASARKAN TIPE KELUHAN:
+
+A. BARANG RUSAK (damaged_item):
+   - Jika kurir MELAPORKAN kerusakan (damage_reported_by_courier=true) atau status pengiriman "delivered_with_damage_report" → klaim VALID.
+   - Jika CCTV mencatat barang sudah rusak di gudang (warehouse_condition="damaged_in_warehouse") → klaim VALID.
+   - Jika kurir melaporkan barang utuh DAN CCTV mencatat barang OK saat keluar gudang → klaim TIDAK VALID (indikasi fraud).
+
+B. BARANG TIDAK SESUAI / SALAH KIRIM (wrong_item):
+   - Jika barang sudah terkirim (ada log kurir) dan pelanggan mengeluh salah produk → klaim VALID (kesalahan gudang).
+
+C. BARANG KURANG (missing_item / partial delivery):
+   - Jika ada catatan pengiriman parsial atau jumlah tidak sesuai → klaim VALID.
+
+D. BARANG TERLAMBAT (late_delivery):
+   - Jika tanggal pengiriman terakhir di log kurir menunjukkan keterlambatan signifikan → klaim VALID.
+
+E. STOK HABIS SETELAH BAYAR (stock-out):
+   - Jika stok di database = 0 dan warehouse_condition = "depleted" → klaim VALID.
+   - Tidak ada log kurir adalah WAJAR karena barang memang belum pernah dikirim.
+   - JANGAN tolak klaim hanya karena tidak ada data pengiriman.
+
+F. FRAUD / ORDER TIDAK DIKENAL:
+   - Jika order ID menghasilkan "Produk Tidak Dikenal" → klaim TIDAK VALID.
+   - Jika pelanggan mengklaim kerusakan TETAPI semua bukti logistik menyatakan barang utuh → TIDAK VALID.
 
 OUTPUT FORMAT (JSON):
 {
@@ -35,10 +61,10 @@ OUTPUT FORMAT (JSON):
     "cctv_metadata_summary": "...",
     "audit_notes": "...",
     "need_more_data": false,
-    "additional_data_needed": "..."  // Hanya jika need_more_data=true
+    "additional_data_needed": "..."
 }
 
-PENTING: Bersikaplah OBJEKTIF. Jangan berpihak ke pelanggan maupun perusahaan."""
+PENTING: Bersikaplah OBJEKTIF. Validasi berdasarkan BUKTI, bukan asumsi."""
 
 
 def get_llm():
@@ -65,9 +91,41 @@ async def logistics_auditor_node(state: GraphState) -> dict:
     if not complaint:
         return {"audit_result": None, "error": "No complaint data to audit"}
 
-    # Ambil data dari mock tools
+    # Ambil data dari tools
     inventory_data = await check_inventory_status(complaint["order_id"])
     courier_log = await get_courier_log(complaint["order_id"])
+
+    # Generate CCTV metadata berdasarkan kondisi gudang aktual
+    wh_condition = inventory_data.get("warehouse_condition", "unknown")
+    if wh_condition == "good":
+        cctv_summary = (
+            "CCTV Metadata Gudang:\n"
+            "- Timestamp scan terakhir: 2026-05-10 14:23:00\n"
+            "- Status kondisi paket saat keluar gudang: BAIK / OK\n"
+            "- Petugas gudang: Budi Santoso\n"
+            "- Catatan: Paket dikemas sesuai SOP, tidak ada kerusakan terdeteksi"
+        )
+    elif wh_condition == "damaged_in_warehouse":
+        cctv_summary = (
+            "CCTV Metadata Gudang:\n"
+            "- Timestamp scan terakhir: 2026-05-10 14:23:00\n"
+            "- Status kondisi paket saat keluar gudang: ADA KERUSAKAN TERCATAT\n"
+            "- Petugas gudang: Budi Santoso\n"
+            "- Catatan: Barang terdeteksi memiliki cacat/kerusakan sejak di gudang sebelum dikirim"
+        )
+    elif wh_condition == "depleted":
+        cctv_summary = (
+            "CCTV Metadata Gudang:\n"
+            "- TIDAK ADA REKAMAN — barang tidak pernah diproses keluar gudang\n"
+            "- Alasan: Stok habis (depleted), barang belum pernah dikirimkan\n"
+            "- Catatan: Order ini berstatus 'dibayar' tapi belum bisa diproses karena stok kosong"
+        )
+    else:
+        cctv_summary = (
+            "CCTV Metadata Gudang:\n"
+            "- Status: DATA TIDAK TERSEDIA\n"
+            "- Catatan: Order ID tidak dikenali dalam sistem gudang"
+        )
 
     audit_context = f"""
 DATA AUDIT untuk Order ID: {complaint['order_id']}
@@ -75,16 +133,13 @@ Customer ID: {complaint['customer_id']}
 Tipe Komplain: {complaint['complaint_type']}
 Deskripsi: {complaint['complaint_description']}
 
-DATA STOK:
+DATA STOK & PRODUK:
 {json.dumps(inventory_data, indent=2, ensure_ascii=False)}
 
-LOG KURIR:
+LOG KURIR / PENGIRIMAN:
 {json.dumps(courier_log, indent=2, ensure_ascii=False)}
 
-CCTV Metadata (simulasi):
-- Timestamp terakhir scan gudang: 2026-05-10 14:23:00
-- Status kondisi paket saat keluar gudang: "OK"
-- Nama petugas gudang: "Budi Santoso"
+{cctv_summary}
 """
 
     llm = get_llm()
@@ -95,7 +150,16 @@ CCTV Metadata (simulasi):
 
     try:
         response = await llm.ainvoke(messages)
-        result = json.loads(response.content)
+        
+        raw_content = response.content.strip()
+        if raw_content.startswith("```json"):
+            raw_content = raw_content[7:]
+        elif raw_content.startswith("```"):
+            raw_content = raw_content[3:]
+        if raw_content.endswith("```"):
+            raw_content = raw_content[:-3]
+            
+        result = json.loads(raw_content.strip())
 
         audit_result: AuditResult = {
             "claim_valid": result.get("claim_valid"),

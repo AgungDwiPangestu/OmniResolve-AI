@@ -1,46 +1,55 @@
 """
-src/tools/courier_tools.py — Mock Courier API Tools
-Production: integrasi dengan JNE, J&T, SiCepat, atau Lalamove API.
+src/tools/courier_tools.py — Courier API Tools
+Berkomunikasi dengan database logistik.
 """
 import asyncio
+import json
+import asyncpg
+import structlog
+from src.config import get_settings
 
+logger = structlog.get_logger(__name__)
 
-MOCK_COURIER_LOGS = {
-    "ORD-001": {
-        "tracking_id": "JNE-8821345",
-        "status": "delivered",
-        "last_update": "2026-05-09 16:45",
-        "events": [
-            {"time": "2026-05-07 08:00", "status": "Paket diambil dari gudang", "location": "Jakarta Barat"},
-            {"time": "2026-05-08 10:30", "status": "Dalam perjalanan", "location": "Tangerang"},
-            {"time": "2026-05-09 16:45", "status": "Terkirim — diterima oleh: Budi H.", "location": "Jakarta Selatan"},
-        ],
-        "condition_on_pickup": "intact",
-    },
-    "ORD-004": {
-        "tracking_id": "JNT-5590234",
-        "status": "delivered_with_damage_report",
-        "last_update": "2026-05-10 14:20",
-        "events": [
-            {"time": "2026-05-08 09:00", "status": "Paket diambil dari gudang", "location": "Bekasi"},
-            {"time": "2026-05-09 20:15", "status": "Hub transit — paket dipindahkan", "location": "Karawang"},
-            {"time": "2026-05-10 14:20", "status": "Terkirim — ada laporan kemasan rusak", "location": "Depok"},
-        ],
-        "condition_on_pickup": "intact",
-        "damage_reported_by_courier": True,
-    },
-}
+async def get_db_connection():
+    settings = get_settings()
+    return await asyncpg.connect(
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        database=settings.postgres_db
+    )
 
 
 async def get_courier_log(order_id: str) -> dict:
     """
-    Ambil log histori pengiriman untuk order tertentu.
+    Ambil log histori pengiriman untuk order tertentu dari database.
     """
-    # Simulasi network latency
-    await asyncio.sleep(0.1)
-
-    if order_id in MOCK_COURIER_LOGS:
-        return MOCK_COURIER_LOGS[order_id]
+    try:
+        conn = await get_db_connection()
+        query = """
+            SELECT tracking_id, status, condition_on_pickup, damage_reported_by_courier, delivery_logs
+            FROM deliveries
+            WHERE order_id = $1
+        """
+        row = await conn.fetchrow(query, order_id)
+        await conn.close()
+        
+        if row:
+            logs = row["delivery_logs"]
+            events = json.loads(logs) if isinstance(logs, str) else logs
+            last_update = events[-1]["time"] if events else "N/A"
+            
+            return {
+                "tracking_id": row["tracking_id"],
+                "status": row["status"],
+                "last_update": last_update,
+                "events": events,
+                "condition_on_pickup": row["condition_on_pickup"],
+                "damage_reported_by_courier": row["damage_reported_by_courier"],
+            }
+    except Exception as e:
+        logger.error("db.courier_error", error=str(e))
 
     return {
         "tracking_id": f"UNKNOWN-{order_id}",

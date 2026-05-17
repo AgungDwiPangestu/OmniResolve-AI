@@ -4,7 +4,7 @@ src/agents/strategic_negotiator.py — Agent C: Decision Maker
 Tugas:
 - Menggunakan CLV (Customer Lifetime Value) untuk mengambil keputusan finansial
 - Menentukan tipe dan nilai kompensasi yang optimal
-- Mentrigger Human-in-the-Loop jika nilai kompensasi melebihi threshold
+- Menentukan apakah perlu persetujuan manual (HITL)
 """
 import json
 import structlog
@@ -13,36 +13,50 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config import get_settings
 from src.graph.state import GraphState, CompensationDecision
-from src.tools.inventory_tools import get_customer_profile_mock
+from src.tools.inventory_tools import get_customer_profile_by_order, check_inventory_status
 
 logger = structlog.get_logger(__name__)
 
-NEGOTIATOR_SYSTEM_PROMPT = """Kamu adalah Strategic Negotiator OmniResolve-AI — pengambil keputusan finansial yang cerdas.
+NEGOTIATOR_SYSTEM_PROMPT = """Kamu adalah Strategic Negotiator OmniResolve-AI — pengambil keputusan finansial yang cerdas untuk Qhomemart (Toko Retail Bahan Bangunan & Furnitur).
 
 TUGASMU:
 Tentukan kompensasi TERBAIK berdasarkan:
-1. Validitas klaim (dari hasil audit)
+1. Validitas klaim (dari hasil audit logistik dan stok)
 2. Profil pelanggan (CLV, loyalitas, histori)
-3. Kebijakan perusahaan untuk minimisasi biaya operasional
+3. Kebijakan resolusi konflik (SOP) Qhomemart.
 
-TIPE KEPUTUSAN:
-- "voucher": Berikan voucher diskon (pelanggan baru / barang murah < Rp 500.000)
-- "replacement": Kirim pengganti + ambil barang rusak (pelanggan setia / barang mahal)
-- "refund": Refund penuh (klaim sangat valid, pelanggan sangat loyal)
-- "reject": Tolak dengan penjelasan (klaim tidak valid)
+SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
+1. KLAIM TIDAK VALID / FRAUD: Keputusan "reject", kompensasi Rp 0.
+2. BARANG RUSAK (Damaged): 
+   - Opsi Utama: "replacement" (Ganti Baru).
+   - Opsi Tambahan (jika pelanggan loyal): Berikan voucher tambahan Rp 100.000.
+3. SALAH KIRIM (Wrong Item):
+   - Opsi: "replacement" (Kirim ulang) + Voucher Maaf Rp 50.000.
+4. STOK HABIS (Stock-out):
+   - WAJIB berikan DUA OPSI dalam reasoning:
+     A. "refund" 100% dari harga produk.
+     B. "voucher" sebesar 110% dari harga produk (sebagai insentif agar tidak tarik uang).
+5. BARANG TERLAMBAT (Late):
+   - Berikan "voucher" senilai 10% dari harga barang. Jika keterlambatan > 5 hari, naikkan ke 15%.
 
 OUTPUT FORMAT (JSON):
 {
-    "decision_type": "voucher" | "replacement" | "refund" | "reject",
-    "compensation_value_idr": 0.0,
+    "decision_type": "voucher" | "replacement" | "refund" | "reject" | "multi_choice",
+    "compensation_value_idr": 0.0, 
+    "options": [
+        {"type": "refund", "value": 8500000, "label": "Refund Dana 100%"},
+        {"type": "voucher", "value": 9350000, "label": "Voucher Belanja 110% (Rekomendasi)"}
+    ], // Hanya jika decision_type = "multi_choice"
     "reasoning": "Chain of Thought: ...",
     "requires_human_approval": false
 }
 
-LOGIKA CLV:
-- Pelanggan baru (total_orders < 5): Pilih opsi konservatif
-- Pelanggan setia (is_loyal=true atau lifetime_value > 5jt): Pilih opsi premium
-- Kompensasi > Rp 1.000.000 WAJIB requires_human_approval = true"""
+ATURAN HITL:
+- Jika total nilai (atau salah satu opsi) > Rp 1.000.000 → set requires_human_approval = true.
+
+LOGIKA LOYALITAS (CLV):
+- Jika CLV > 10jt, selalu tambahkan Voucher Loyalty Rp 200.000 di luar solusi utama.
+- Gunakan bahasa yang sangat menghargai status loyalitas mereka."""
 
 
 def get_llm():
@@ -69,8 +83,13 @@ async def strategic_negotiator_node(state: GraphState) -> dict:
     if not complaint or not audit:
         return {"error": "Missing complaint or audit data for negotiation"}
 
-    # Ambil profil pelanggan
-    customer_profile = await get_customer_profile_mock(complaint["customer_id"])
+    # Ambil profil pelanggan berdasarkan order_id
+    customer_profile = await get_customer_profile_by_order(complaint["order_id"])
+    
+    # Ambil data produk untuk mengetahui harga
+    inventory_data = await check_inventory_status(complaint["order_id"])
+    product_price = inventory_data.get("price_idr", 0)
+    product_name = inventory_data.get("product_name", "Tidak diketahui")
 
     decision_context = f"""
 KELUHAN PELANGGAN:
@@ -80,9 +99,13 @@ KELUHAN PELANGGAN:
 - Deskripsi: {complaint['complaint_description']}
 - Sentiment Score: {complaint['sentiment_score']}
 
+DATA PRODUK:
+- Nama Produk: {product_name}
+- Harga Produk (price_idr): Rp {product_price:,.0f}
+- Status Stok: {audit['stock_status']}
+
 HASIL AUDIT:
 - Klaim Valid: {audit['claim_valid']}
-- Status Stok: {audit['stock_status']}
 - Log Kurir: {audit['courier_log_summary']}
 - Catatan Audit: {audit['audit_notes']}
 
@@ -104,12 +127,27 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
 
     try:
         response = await llm.ainvoke(messages)
-        result = json.loads(response.content)
+        
+        raw_content = response.content.strip()
+        if raw_content.startswith("```json"):
+            raw_content = raw_content[7:]
+        elif raw_content.startswith("```"):
+            raw_content = raw_content[3:]
+        if raw_content.endswith("```"):
+            raw_content = raw_content[:-3]
+            
+        result = json.loads(raw_content.strip())
 
         compensation_value = float(result.get("compensation_value_idr", 0.0))
+        
+        # Check if any options exceed threshold
+        options = result.get("options", [])
+        option_exceeds = any(float(opt.get("value", 0)) > settings.hitl_threshold_idr for opt in options)
+        
         requires_hitl = (
             result.get("requires_human_approval", False)
             or compensation_value > settings.hitl_threshold_idr
+            or option_exceeds
         )
 
         decision: CompensationDecision = {
@@ -117,6 +155,7 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
             "compensation_value_idr": compensation_value,
             "reasoning": result.get("reasoning", ""),
             "requires_human_approval": requires_hitl,
+            "options": options
         }
 
         logger.info(

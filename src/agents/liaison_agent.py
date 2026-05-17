@@ -17,34 +17,31 @@ from src.graph.state import GraphState, ComplaintContext
 
 logger = structlog.get_logger(__name__)
 
-LIAISON_SYSTEM_PROMPT = """Kamu adalah Liaison Agent OmniResolve-AI — asisten layanan pelanggan yang SANGAT berempati dan profesional.
+LIAISON_SYSTEM_PROMPT = """Kamu adalah Liaison Agent OmniResolve-AI (First Responder Qhomemart).
+Tugas utamanya adalah menyerap emosi pelanggan dan memastikan mereka merasa didengar.
 
 TUGASMU:
-1. Menyambut pelanggan dengan hangat dan berempati
-2. Melakukan sentiment analysis pada keluhan (nilai -1.0 hingga 1.0)
-3. Mengekstrak informasi kunci dari keluhan:
-   - customer_id (minta jika tidak ada)
-   - order_id (minta jika tidak ada)
-   - complaint_type: "damaged_item" | "missing_item" | "wrong_item" | "late_delivery" | "other"
-   - complaint_description
-   - evidence_urls (minta foto/video jika belum ada)
-4. Jika semua data terkumpul, berikan konfirmasi kepada pelanggan bahwa keluhannya sedang diproses
+1. EMPATI EKSTREM: Jika pelanggan marah (sentiment < -0.5), mulailah dengan permintaan maaf yang sangat tulus.
+2. CONVERSATIONAL GATHERING: Kamu berada dalam alur percakapan interaktif. Jika nomor order belum ada, tanyakan dengan ramah atau berikan petunjuk cara mencarinya.
+3. DATA EXTRACTION: Ambil order_id, tipe keluhan, dan deskripsi jika ada di pesan.
+4. DATA COMPLETE: Set `data_complete: true` HANYA jika kamu sudah mendapatkan nomor order (format ORD-...) DAN deskripsi keluhan. Jika belum lengkap, set `false`.
+5. KONFIRMASI: Jika data sudah lengkap, beritahukan pelanggan bahwa keluhan mereka akan segera diproses secara otomatis.
 
 OUTPUT FORMAT (JSON):
 {
-    "customer_response": "...",  // Response empati untuk pelanggan
-    "data_complete": true/false,  // Apakah semua data sudah terkumpul
+    "customer_response": "...",  
+    "data_complete": true/false,  
     "complaint": {
         "customer_id": "...",
         "order_id": "...",
-        "complaint_type": "...",
+        "complaint_type": "damaged_item" | "missing_item" | "wrong_item" | "late_delivery" | "other",
         "complaint_description": "...",
         "sentiment_score": 0.0,
         "evidence_urls": []
     }
 }
 
-PENTING: Gunakan Bahasa Indonesia yang natural dan empatis. Jangan terkesan robotic."""
+PENTING: Jadilah wajah Qhomemart yang ramah dan peduli."""
 
 
 def get_llm():
@@ -73,7 +70,21 @@ async def liaison_agent_node(state: GraphState) -> dict:
 
     try:
         response = await llm.ainvoke(messages)
-        result = json.loads(response.content)
+        
+        raw_content = response.content.strip()
+        
+        # Robust JSON extraction from markdown
+        import re
+        json_match = re.search(r"({.*})", raw_content, re.DOTALL)
+        if json_match:
+            raw_content = json_match.group(1)
+        
+        try:
+            result = json.loads(raw_content)
+        except json.JSONDecodeError:
+            # Try one more time by stripping markdown backticks if regex didn't catch it
+            clean_content = raw_content.replace("```json", "").replace("```", "").strip()
+            result = json.loads(clean_content)
 
         complaint_data = result.get("complaint", {})
         complaint: ComplaintContext = {
@@ -85,9 +96,16 @@ async def liaison_agent_node(state: GraphState) -> dict:
             "evidence_urls": complaint_data.get("evidence_urls", []),
         }
 
+        # Recovery: Jika order_id tidak ditemukan/unknown, coba cari manual pakai regex
+        if complaint["order_id"] == "unknown":
+            order_match = re.search(r"(ORD-[\w-]+)", state["raw_input"], re.IGNORECASE)
+            if order_match:
+                complaint["order_id"] = order_match.group(1).upper()
+
         logger.info(
             "liaison_agent.done",
             session_id=state["session_id"],
+            order_id=complaint["order_id"],
             complaint_type=complaint["complaint_type"],
             sentiment=complaint["sentiment_score"],
             data_complete=result.get("data_complete"),
@@ -100,10 +118,15 @@ async def liaison_agent_node(state: GraphState) -> dict:
 
     except (json.JSONDecodeError, KeyError) as e:
         logger.error("liaison_agent.parse_error", error=str(e))
-        # Fallback — buat complaint dasar dari raw input
+        
+        # Recovery manual jika JSON total gagal
+        import re
+        order_match = re.search(r"(ORD-[\w-]+)", state["raw_input"], re.IGNORECASE)
+        recovered_order_id = order_match.group(1).upper() if order_match else "unknown"
+
         fallback_complaint: ComplaintContext = {
             "customer_id": "unknown",
-            "order_id": "unknown",
+            "order_id": recovered_order_id,
             "complaint_type": "other",
             "complaint_description": state["raw_input"],
             "sentiment_score": -0.5,

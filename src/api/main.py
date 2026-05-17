@@ -97,9 +97,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
 # Routers
 app.include_router(health.router, tags=["System"])
 app.include_router(complaints.router, prefix="/api/v1", tags=["Complaints"])
 app.include_router(chat.router, prefix="/api/v1", tags=["Chat (OpenAI-compatible)"])
 app.include_router(telegram_webhook.router, prefix="/api/v1", tags=["Telegram"])
 app.include_router(diagnostic.router, prefix="/api/v1", tags=["Diagnostic"])
+
+# Static files for Dashboard
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/dashboard", StaticFiles(directory=static_dir), name="static")
+
+@app.get("/")
+async def read_index():
+    return FileResponse(os.path.join(static_dir, "index.html"))

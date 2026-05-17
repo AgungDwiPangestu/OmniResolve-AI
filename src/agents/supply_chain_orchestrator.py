@@ -18,17 +18,20 @@ from src.tools.courier_tools import dispatch_courier
 
 logger = structlog.get_logger(__name__)
 
-RESPONSE_COMPOSER_PROMPT = """Kamu adalah Response Composer OmniResolve-AI.
-Susun pesan AKHIR yang akan dikirimkan kepada pelanggan.
+RESPONSE_COMPOSER_PROMPT = """Kamu adalah Senior Customer Relationship Manager Qhomemart.
+Tugasmu adalah merangkai pesan akhir yang sangat profesional, empatis, dan SOLUTIF.
 
-Pesan harus:
-- Empatik dan profesional
-- Menjelaskan dengan JELAS apa yang akan dilakukan perusahaan
-- Memberikan perkiraan waktu penyelesaian
-- Tidak menggunakan bahasa teknis/jargon
-- Menggunakan Bahasa Indonesia yang natural
+PANDUAN PENULISAN:
+1. GREETING PERSONAL: Gunakan "Yth. Bapak/Ibu [Nama]" (ambil dari customer_profile). Jika pelanggan setia (is_loyal=true), tambahkan apresiasi atas loyalitasnya.
+2. EMPATI TINGGI: Jika sentiment pelanggan negatif, gunakan bahasa yang lebih menenangkan. Contoh: "Kami sangat memahami kekecewaan Anda..."
+3. STRUKTUR JELAS:
+   - Jika keputusan adalah "multi_choice": Sajikan pilihan solusi dengan nomor (1, 2) agar pelanggan mudah memilih. Berikan rekomendasi mana yang terbaik bagi mereka (misal: Voucher 110% lebih untung).
+   - Jika keputusan tunggal: Jelaskan langkah selanjutnya dan estimasi waktu secara spesifik (misal: 2x24 jam kerja).
+4. CALL TO ACTION (CTA): 
+   - Akhiri dengan instruksi yang jelas (misal: "Ketik angka 1 atau 2 untuk memilih solusi").
+   - Berikan informasi bahwa tim kami siap membantu kapan saja.
 
-Format: Plain text, bukan JSON."""
+DILARANG: Menggunakan bahasa kaku/robotic, memberikan janji palsu, atau menyalahkan pelanggan."""
 
 
 def get_llm():
@@ -87,6 +90,12 @@ async def supply_chain_orchestrator_node(state: GraphState) -> dict:
         else:
             actions_failed.append(f"Dispatch kurir gagal: {courier_result['message']}")
 
+        # Jika ada kompensasi ekstra (voucher)
+        if decision.get("compensation_value_idr", 0) > 0:
+            actions_taken.append(
+                f"Voucher kompensasi ekstra Rp {decision['compensation_value_idr']:,.0f} diterbitkan"
+            )
+
     elif decision["decision_type"] == "voucher":
         actions_taken.append(
             f"Voucher diskon Rp {decision['compensation_value_idr']:,.0f} diterbitkan"
@@ -113,7 +122,15 @@ async def supply_chain_orchestrator_node(state: GraphState) -> dict:
     }
 
     # --- Compose final response untuk pelanggan ---
+    cp = state.get("customer_profile") or {}
+    customer_name = cp.get("customer_name", "Pelanggan")
+    order_id = complaint.get("order_id", "N/A")
+    complaint_desc = complaint.get("complaint_description", "")
+    
     response_context = f"""
+Nama Pelanggan: {customer_name}
+Order ID: {order_id}
+Keluhan: {complaint_desc}
 Keputusan: {decision['decision_type']}
 Nilai kompensasi: Rp {decision['compensation_value_idr']:,.0f}
 Aksi berhasil: {', '.join(actions_taken) if actions_taken else 'tidak ada'}
@@ -154,13 +171,18 @@ Reasoning: {decision['reasoning']}
 
 async def hitl_supervisor_node(state: GraphState) -> dict:
     """
-    Node HITL — mengirim notifikasi ke supervisor untuk approval manual.
+    Node HITL — mengirim notifikasi email ke supervisor untuk approval manual.
     Dipanggil ketika kompensasi melebihi threshold.
     """
-    import httpx
+    import smtplib
+    import asyncio
+    from email.message import EmailMessage
+    
     settings = get_settings()
     decision = state.get("compensation_decision")
     session_id = state["session_id"]
+    audit = state.get("audit_result")
+    profile = state.get("customer_profile")
 
     logger.info(
         "hitl.triggered",
@@ -168,29 +190,120 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
         value=decision["compensation_value_idr"] if decision else 0,
     )
 
-    # Mock notifikasi supervisor (Slack webhook / email)
-    payload = {
-        "text": (
-            f"⚠️ *APPROVAL REQUIRED* — OmniResolve-AI\n"
-            f"Session: `{session_id}`\n"
-            f"Keputusan: `{decision['decision_type'] if decision else 'unknown'}`\n"
-            f"Nilai: Rp {decision['compensation_value_idr']:,.0f if decision else 0}\n"
-            f"Reasoning: {decision['reasoning'][:200] if decision else '-'}..."
-        )
-    }
+    subject = f"[OmniResolve-AI] ⚠️ Tindakan Diperlukan: Approval Kompensasi (ID: {session_id[:8]})"
+    
+    # Pre-compute values
+    d_type = decision['decision_type'] if decision else 'unknown'
+    d_value = decision['compensation_value_idr'] if decision else 0
+    d_reasoning = decision['reasoning'] if decision else '-'
+
+    # Fallback plain text
+    text_body = (
+        f"APPROVAL REQUIRED — OmniResolve-AI\n\n"
+        f"Session ID: {session_id}\n"
+        f"Keputusan AI: {d_type}\n"
+        f"Nilai Kompensasi: Rp {d_value:,.0f}\n\n"
+        f"Alasan (Reasoning):\n{d_reasoning}\n\n"
+        f"Silakan login ke dashboard untuk melakukan approval."
+    )
+
+    # Beautiful HTML Email
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <!-- Header -->
+            <div style="background-color: #e63946; padding: 20px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px;">OMNIRESOLVE-AI</h1>
+                <p style="color: #ffcdb2; margin: 5px 0 0 0; font-size: 14px;">Persetujuan Manajer Diperlukan</p>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px;">
+                <p style="color: #333333; font-size: 16px; line-height: 1.6;">
+                    Halo Tim Manajemen,
+                </p>
+                <p style="color: #333333; font-size: 16px; line-height: 1.6;">
+                    Sistem <strong>OmniResolve-AI</strong> telah menahan sebuah keputusan penyelesaian keluhan pelanggan karena nilai kompensasi melebihi batas persetujuan otomatis (Rp 1.000.000). Mohon tinjau rincian berikut:
+                </p>
+                
+                <!-- Details Card -->
+                <div style="background-color: #f8f9fa; border-left: 4px solid #457b9d; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;"><strong>Session ID</strong></td>
+                            <td style="padding: 8px 0; color: #2b2d42; font-size: 14px; font-family: monospace;">{session_id}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Rekomendasi AI</strong></td>
+                            <td style="padding: 8px 0; color: #2b2d42; font-size: 14px; text-transform: uppercase; font-weight: bold;">{d_type}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Total Nilai</strong></td>
+                            <td style="padding: 8px 0; color: #e63946; font-size: 16px; font-weight: bold;">Rp {d_value:,.0f}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Reasoning Box -->
+                <h3 style="color: #1d3557; font-size: 16px; margin-bottom: 10px;">Analisis & Chain of Thought AI:</h3>
+                <div style="background-color: #edf2f4; padding: 15px; border-radius: 6px; color: #4a4e69; font-size: 14px; line-height: 1.6; font-style: italic;">
+                    "{d_reasoning}"
+                </div>
+
+                <!-- Call to Action -->
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="{settings.base_url}/?approve_session={session_id}" style="background-color: #2a9d8f; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
+                        🚀 Tinjau & Ambil Keputusan di Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div style="background-color: #f1faee; padding: 15px; text-align: center; font-size: 12px; color: #6c757d; border-top: 1px solid #dee2e6;">
+                Pesan ini dibuat secara otomatis oleh OmniResolve-AI Agent Pipeline.<br>
+                &copy; 2026 Qhomemart & OmniResolve
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    def send_email():
+        if not settings.smtp_user or not settings.smtp_pass:
+            raise ValueError("Kredensial SMTP belum dikonfigurasi di .env")
+            
+        msg = EmailMessage()
+        msg.set_content(text_body)
+        msg.add_alternative(html_body, subtype='html')
+        
+        msg["Subject"] = subject
+        msg["From"] = settings.smtp_from
+        
+        # Kirim ke 2 pimpinan yang di-request
+        managers = ["haris.sandi23@students.utdi.ac.id", "agung.dwi23@students.utdi.ac.id"]
+        msg["To"] = ", ".join(managers)
+
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+            server.starttls()
+            server.login(settings.smtp_user, settings.smtp_pass)
+            server.send_message(msg)
 
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(settings.supervisor_webhook_url, json=payload)
-        logger.info("hitl.notification_sent", session_id=session_id)
+        await asyncio.to_thread(send_email)
+        logger.info("hitl.email_notification_sent", session_id=session_id)
     except Exception as e:
-        logger.warning("hitl.notification_failed", error=str(e))
+        logger.warning("hitl.email_notification_failed", error=str(e))
 
     # Setelah notifikasi, tetap lanjut ke orchestrator (dengan flag sudah dinotif)
     return {
         "final_response": (
-            "Keluhan Anda memerlukan persetujuan dari tim senior kami. "
-            "Kami akan menghubungi Anda dalam waktu 1x24 jam. "
+            "Keluhan Anda memerlukan persetujuan dari tim manajer kami karena nilainya melebihi limit otomatis. "
+            "Kami telah mengirimkan notifikasi internal dan akan menghubungi Anda dalam waktu 1x24 jam. "
             f"Nomor referensi: {session_id}"
         )
     }
