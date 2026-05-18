@@ -308,6 +308,9 @@ async def _run_pipeline(update, context, session, chat_id: int):
     pipeline_input = session.build_pipeline_input()
 
     logger.info("telegram.pipeline_start", chat_id=chat_id, session_id=session_id)
+    
+    from src.logger import broadcast_event
+    broadcast_event("session_start", session_id, {"project_name": "OmniResolve-AI"})
 
     try:
         initial_state: GraphState = {
@@ -391,6 +394,7 @@ async def _run_pipeline(update, context, session, chat_id: int):
         )
 
         session.step = ConversationStep.DONE
+        broadcast_event("session_end", session_id, {"project_name": "OmniResolve-AI"})
         logger.info("telegram.pipeline_done", chat_id=chat_id, session_id=session_id)
 
     except Exception as e:
@@ -406,6 +410,7 @@ async def _run_pipeline(update, context, session, chat_id: int):
             parse_mode=ParseMode.MARKDOWN,
         )
         session.step = ConversationStep.DONE
+        broadcast_event("session_end", session_id, {"project_name": "OmniResolve-AI"})
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -20,10 +20,23 @@ async def get_db_connection():
         database=settings.postgres_db
     )
 
+def normalize_order_id(order_id: str) -> str:
+    """
+    Normalisasi Order ID ke format database (e.g., ORD-004 -> ORD-QHM-004).
+    """
+    if not order_id:
+        return order_id
+    order_id = order_id.upper().strip()
+    if order_id.startswith("ORD-") and not order_id.startswith("ORD-QHM-"):
+        return order_id.replace("ORD-", "ORD-QHM-")
+    return order_id
+
+
 async def check_inventory_status(order_id: str) -> dict:
     """
     Cek status stok untuk order tertentu dari database.
     """
+    order_id = normalize_order_id(order_id)
     try:
         conn = await get_db_connection()
         query = """
@@ -103,6 +116,7 @@ async def get_customer_profile_by_order(order_id: str) -> CustomerProfile:
     Ini adalah cara utama untuk mendapatkan profil pelanggan karena
     pelanggan hanya tahu nomor order mereka, bukan customer_id internal.
     """
+    order_id = normalize_order_id(order_id)
     try:
         conn = await get_db_connection()
         query = """

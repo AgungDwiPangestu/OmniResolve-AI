@@ -62,6 +62,9 @@ async def chat_completions(request: ChatCompletionRequest):
     dan menjalankan seluruh pipeline multi-agent.
     """
     session_id = str(uuid.uuid4())
+    
+    from src.logger import broadcast_event
+    broadcast_event("session_start", session_id, {"project_name": "OmniResolve-AI"})
 
     # Ambil pesan terakhir dari user
     user_messages = [m for m in request.messages if m.role == "user"]
@@ -99,6 +102,11 @@ async def chat_completions(request: ChatCompletionRequest):
     except Exception as e:
         logger.error("chat.pipeline_error", session_id=session_id, error=str(e))
         response_text = "Maaf, sistem sedang mengalami gangguan. Silakan coba lagi."
+        from src.logger import broadcast_event
+        broadcast_event("session_end", session_id, {"project_name": "OmniResolve-AI", "error": str(e)})
+
+    from src.logger import broadcast_event
+    broadcast_event("session_end", session_id, {"project_name": "OmniResolve-AI", "response": response_text})
 
     return ChatCompletionResponse(
         id=f"chatcmpl-{session_id}",

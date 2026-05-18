@@ -1,0 +1,8 @@
+building_name = "Qhome Virtual Office"
+
+[[floors]]
+name = "OmniResolve Headquarters"
+floor_number = 1
+accent = "#f59e0b"
+icon = "🏢"
+repos = ["OmniResolve-AI", "omniresolve-ai", "omni-negotiator", "omni-logistics", "omni-supply-chain"]

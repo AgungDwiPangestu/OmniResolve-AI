@@ -21,10 +21,14 @@ async def get_db_connection():
     )
 
 
+from src.tools.inventory_tools import normalize_order_id
+
+
 async def get_courier_log(order_id: str) -> dict:
     """
     Ambil log histori pengiriman untuk order tertentu dari database.
     """
+    order_id = normalize_order_id(order_id)
     try:
         conn = await get_db_connection()
         query = """

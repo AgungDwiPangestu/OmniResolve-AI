@@ -12,6 +12,10 @@ CARA PAKAI:
 import asyncio
 import structlog
 from telegram import BotCommand
+
+from src.logger import setup_logging
+setup_logging()
+
 from telegram.ext import (
     Application,
     CommandHandler,

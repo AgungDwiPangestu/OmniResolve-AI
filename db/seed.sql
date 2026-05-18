@@ -24,7 +24,7 @@ INSERT INTO customers (customer_id, customer_name, email, phone, address, is_loy
 INSERT INTO products (product_id, category, product_name, price_idr, stock_available, warehouse_location, warehouse_condition) VALUES
 ('PRD-001', 'Bahan Bangunan', 'Granit Lantai Niro Granite 60x60 (Dus)', 250000.00, 50, 'Gudang Utama A1', 'good'),
 ('PRD-002', 'Bahan Bangunan', 'Semen Instan Mortar Utama (MU-380) 40kg', 85000.00, 0, 'Gudang Material B2', 'depleted'),
-('PRD-003', 'Pengecatan', 'Cat Tembok Dulux Weathershield 20L (Brilliant White)', 1850000.00, 12, 'Gudang Cat C1', 'good'),
+('PRD-003', 'Furnitur', 'Rak Dinding Minimalis Kayu', 150000.00, 12, 'Gudang Furnitur F1', 'good'),
 ('PRD-004', 'Sanitary', 'Kloset Duduk Toto Eco Washer Tipe CW421J', 2400000.00, 5, 'Gudang Sanitary D3', 'damaged_in_warehouse'),
 ('PRD-005', 'Furnitur', 'Sofa Minimalis L-Shape Fabric (Abu-abu)', 5500000.00, 2, 'Gudang Furnitur F1', 'damaged_in_warehouse');
 
@@ -34,7 +34,7 @@ INSERT INTO products (product_id, category, product_name, price_idr, stock_avail
 INSERT INTO orders (order_id, customer_id, order_date, total_amount_idr, status) VALUES
 ('ORD-QHM-001', 'CUST-003', NOW() - INTERVAL '5 days', 5000000.00, 'delivered'),
 ('ORD-QHM-002', 'CUST-999', NOW() - INTERVAL '1 days', 85000.00, 'pending'),
-('ORD-QHM-003', 'CUST-002', NOW() - INTERVAL '3 days', 1850000.00, 'delivered'),
+('ORD-QHM-003', 'CUST-002', NOW() - INTERVAL '3 days', 150000.00, 'delivered'),
 ('ORD-QHM-004', 'CUST-001', NOW() - INTERVAL '4 days', 2400000.00, 'delivered'),
 ('ORD-QHM-005', 'CUST-001', NOW() - INTERVAL '2 days', 5500000.00, 'delivered');
 
@@ -44,7 +44,7 @@ INSERT INTO orders (order_id, customer_id, order_date, total_amount_idr, status)
 INSERT INTO order_items (order_id, product_id, quantity, subtotal_idr) VALUES
 ('ORD-QHM-001', 'PRD-001', 20, 5000000.00),
 ('ORD-QHM-002', 'PRD-002', 1, 85000.00),
-('ORD-QHM-003', 'PRD-003', 1, 1850000.00),
+('ORD-QHM-003', 'PRD-003', 1, 150000.00),
 ('ORD-QHM-004', 'PRD-004', 1, 2400000.00),
 ('ORD-QHM-005', 'PRD-005', 1, 5500000.00);
 

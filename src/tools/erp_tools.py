@@ -21,11 +21,15 @@ async def get_db_connection():
     )
 
 
+from src.tools.inventory_tools import normalize_order_id
+
+
 async def update_erp_stock(order_id: str, action: str = "reserve_replacement") -> dict:
     """
     Update stok atau status di sistem ERP (Database).
     Action: "reserve_replacement" | "process_refund" | "write_off"
     """
+    order_id = normalize_order_id(order_id)
     try:
         conn = await get_db_connection()
         
