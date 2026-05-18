@@ -37,17 +37,17 @@ export const COFFEE_MACHINE_POSITION = { x: 1081, y: 191 };
 // ============================================================================
 
 /** Printer station position (bottom left corner) */
-export const PRINTER_STATION_POSITION = { x: 50, y: 945 };
+export const PRINTER_STATION_POSITION = { x: 50, y: 765 };
 
 /** Plant position (to the right of printer) */
-export const PLANT_POSITION = { x: 118, y: 970 };
+export const PLANT_POSITION = { x: 118, y: 790 };
 
 // ============================================================================
 // BOSS AREA
 // ============================================================================
 
 /** Boss area rug position (centered under boss desk) */
-export const BOSS_RUG_POSITION = { x: 640, y: 940 };
+export const BOSS_RUG_POSITION = { x: 640, y: 760 };
 
 /** Trash can offset from boss desk position */
 export const TRASH_CAN_OFFSET = { x: 110, y: 65 };

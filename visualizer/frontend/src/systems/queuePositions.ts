@@ -13,15 +13,15 @@
 import { Position } from "@/types";
 
 // Boss desk positions (where agents stand IN FRONT of the desk)
-// Boss desk center at y:928 (grid-aligned 29*32)
+// Boss desk center at y:748 (grid-aligned)
 // Agents stand 60px above desk center so pathfinding can reach them
-export const BOSS_SLOT_LEFT: Position = { x: 520, y: 868 }; // Getting work (arrivals)
-export const BOSS_SLOT_RIGHT: Position = { x: 760, y: 868 }; // Receiving work (departures)
+export const BOSS_SLOT_LEFT: Position = { x: 520, y: 688 }; // Getting work (arrivals)
+export const BOSS_SLOT_RIGHT: Position = { x: 760, y: 688 }; // Receiving work (departures)
 
 // Boss center position (for rendering)
 // Desk visual: drawn 20px below boss with 80px height → desk center = boss_y + 60
-// For desk center at y=960 (grid-aligned 30*32), boss is at y=900
-export const BOSS_POSITION: Position = { x: 640, y: 900 };
+// For desk center at y=780 (grid-aligned 24*32), boss is at y=720
+export const BOSS_POSITION: Position = { x: 640, y: 720 };
 
 // Elevator position (DO NOT CHANGE - this is the elevator's fixed location)
 export const ELEVATOR_POSITION: Position = { x: 86, y: 178 };
@@ -131,14 +131,14 @@ export function isInElevatorZone(pos: Position): boolean {
 // Position 1+ are waiting spots in the queue line
 // A0-A2: horizontal along bottom, A3-A7: vertical going up (above printer)
 export const ARRIVAL_QUEUE_POSITIONS: Position[] = [
-  { x: 480, y: 930 }, // Position 0 (A0 - ready spot, left of boss desk)
-  { x: 330, y: 930 }, // Position 1 (first waiting spot)
-  { x: 190, y: 930 }, // Position 2 (horizontal)
-  { x: 70, y: 820 }, // Position 3 (moved up - above printer)
-  { x: 70, y: 710 }, // Position 4 (vertical going up)
-  { x: 70, y: 600 }, // Position 5
-  { x: 70, y: 490 }, // Position 6
-  { x: 70, y: 380 }, // Position 7
+  { x: 480, y: 750 }, // Position 0 (A0 - ready spot, left of boss desk)
+  { x: 330, y: 750 }, // Position 1 (first waiting spot)
+  { x: 190, y: 750 }, // Position 2 (horizontal)
+  { x: 70, y: 640 }, // Position 3 (moved up - above printer)
+  { x: 70, y: 530 }, // Position 4 (vertical going up)
+  { x: 70, y: 420 }, // Position 5
+  { x: 70, y: 310 }, // Position 6
+  { x: 70, y: 200 }, // Position 7
 ];
 
 // Departure queue positions (right side, horizontal then vertical L-shape)
@@ -146,14 +146,14 @@ export const ARRIVAL_QUEUE_POSITIONS: Position[] = [
 // Position 1+ are waiting spots in the queue line
 // D0-D3: horizontal along bottom, D4-D7: vertical going up
 export const DEPARTURE_QUEUE_POSITIONS: Position[] = [
-  { x: 800, y: 930 }, // Position 0 (D0 - ready spot, right of boss desk)
-  { x: 950, y: 930 }, // Position 1 (first waiting spot)
-  { x: 1090, y: 930 }, // Position 2 (horizontal)
-  { x: 1210, y: 930 }, // Position 3 (corner)
-  { x: 1210, y: 820 }, // Position 4 (vertical going up)
-  { x: 1210, y: 710 }, // Position 5
-  { x: 1210, y: 600 }, // Position 6
-  { x: 1210, y: 490 }, // Position 7
+  { x: 800, y: 750 }, // Position 0 (D0 - ready spot, right of boss desk)
+  { x: 950, y: 750 }, // Position 1 (first waiting spot)
+  { x: 1090, y: 750 }, // Position 2 (horizontal)
+  { x: 1210, y: 750 }, // Position 3 (corner)
+  { x: 1210, y: 640 }, // Position 4 (vertical going up)
+  { x: 1210, y: 530 }, // Position 5
+  { x: 1210, y: 420 }, // Position 6
+  { x: 1210, y: 310 }, // Position 7
 ];
 
 export type QueueType = "arrival" | "departure";

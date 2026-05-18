@@ -156,9 +156,20 @@ class SummaryService:
         desc_lower = desc_clean.lower()
 
         # Handle known Qhome agent names directly
-        for known_name in ["liaison agent", "logistics auditor", "strategic negotiator", "supply chain orchestrator", "hitl supervisor", "supervisor"]:
-            if known_name in desc_lower:
-                return self.dedupe_name(desc_clean, existing_names)
+        qhome_mapping = {
+            "liaison": "Liaison Agent",
+            "auditor": "Logistics Auditor",
+            "logistics": "Logistics Auditor",
+            "negotiator": "Strategic Negotiator",
+            "strategic": "Strategic Negotiator",
+            "orchestrator": "Supply Chain Orchestrator",
+            "supply": "Supply Chain Orchestrator",
+            "supervisor": "HITL Supervisor",
+            "hitl": "HITL Supervisor",
+        }
+        for keyword, mapped_name in qhome_mapping.items():
+            if keyword in desc_lower:
+                return self.dedupe_name(mapped_name, existing_names)
 
         taken = existing_names or set()
 

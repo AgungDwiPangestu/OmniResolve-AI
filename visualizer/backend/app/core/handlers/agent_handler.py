@@ -279,7 +279,7 @@ async def enrich_agent_with_summaries(
 
     # Guard against overwriting custom Qhome agent names
     is_custom_agent = False
-    for custom_name in ["liaison", "logistics", "strategic", "supply chain", "orchestrator", "supervisor"]:
+    for custom_name in ["liaison", "logistics", "strategic", "supply chain", "orchestrator", "supervisor", "auditor", "negotiator", "hitl"]:
         if agent.name and custom_name in agent.name.lower():
             is_custom_agent = True
             break
