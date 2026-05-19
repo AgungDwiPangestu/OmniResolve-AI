@@ -85,29 +85,14 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
 
 
-async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler untuk command /status."""
-    chat_id = update.effective_chat.id
-    
-    # Ambil argumen jika ada (misal: /status tg-8289635135-525038dd)
-    args = context.args
-    ref_code = None
-    if args:
-        ref_code = args[0].strip()
-        
-    if not ref_code:
-        # Periksa apakah ada sesi aktif yang sedang berjalan untuk chat ini
-        session = session_manager.get(chat_id)
-        if session.step == ConversationStep.PROCESSING:
-            await update.message.reply_text("⏳ Komplain Anda saat ini sedang diproses oleh tim agen kami...")
-            return
-        elif session.step == ConversationStep.GATHERING:
-            await update.message.reply_text("📝 Anda sedang berada dalam proses penginputan komplain. Silakan kirimkan keluhan Anda.")
-            return
-
-    # Ambil status dari database PostgreSQL
+async def query_and_send_status(chat_id: int, ref_code: str | None, update_or_query) -> bool:
+    """Helper untuk mengambil status dari database PostgreSQL dan mengirimkannya ke Telegram."""
     settings = get_settings()
     import asyncpg
+    
+    # Deteksi apakah dipanggil dari tombol (callback_query) atau pesan teks biasa
+    is_callback = hasattr(update_or_query, "message") and not hasattr(update_or_query, "reply_text")
+    msg_target = update_or_query.message if is_callback else update_or_query
     
     try:
         conn = await asyncpg.connect(
@@ -125,7 +110,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ref_code
             )
         else:
-            # Cari laporan terakhir untuk chat_id ini
+            # Lacak laporan terakhir untuk chat_id ini
             row = await conn.fetchrow(
                 "SELECT session_id, status, decision_type, compensation_value_idr, final_response, created_at FROM complaint_sessions WHERE session_id LIKE $1 ORDER BY created_at DESC LIMIT 1",
                 f"tg-{chat_id}-%"
@@ -170,24 +155,82 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 msg += f"\n💬 *Tindak Lanjut:* Keluhan Anda telah tercatat dan sedang dalam penyelesaian operasional."
                 
-            await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+            if is_callback:
+                await msg_target.edit_text(msg, parse_mode=ParseMode.MARKDOWN)
+            else:
+                await msg_target.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+            return True
         else:
+            msg = ""
             if ref_code:
-                await update.message.reply_text(
-                    f"❌ Referensi keluhan `{ref_code}` tidak ditemukan di sistem kami. "
-                    "Pastikan kode referensi yang Anda masukkan sudah benar."
+                msg = (
+                    f"❌ Referensi keluhan `{ref_code}` tidak ditemukan di sistem kami.\n\n"
+                    "Silakan masukkan kembali kode referensi keluhan Anda secara tepat (misal: `tg-8289635135-xxxxxxxx`):"
                 )
             else:
-                await update.message.reply_text(
-                    "📝 Belum ada komplain aktif yang tercatat untuk akun Anda. "
+                msg = (
+                    "📝 Belum ada komplain aktif yang tercatat untuk akun Anda.\n\n"
                     "Silakan ketik /start untuk memulai keluhan baru."
                 )
-                
+            
+            if is_callback:
+                await msg_target.edit_text(msg, parse_mode=ParseMode.MARKDOWN)
+            else:
+                await msg_target.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+            return False
+            
     except Exception as e:
         logger.error("telegram.status_query_error", error=str(e))
-        await update.message.reply_text(
-            "⚠️ Gagal menghubungkan ke server status. Silakan coba beberapa saat lagi."
-        )
+        err_msg = "⚠️ Gagal menghubungkan ke server status. Silakan coba beberapa saat lagi."
+        if is_callback:
+            await msg_target.edit_text(err_msg)
+        else:
+            await msg_target.reply_text(err_msg)
+        return False
+
+
+async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk command /status."""
+    chat_id = update.effective_chat.id
+    session = session_manager.get(chat_id)
+    
+    # Ambil argumen jika ada (misal: /status tg-8289635135-525038dd)
+    args = context.args
+    ref_code = None
+    if args:
+        ref_code = args[0].strip()
+        
+    if ref_code:
+        # Jika pengguna langsung mengirimkan ID referensi beserta command
+        await query_and_send_status(chat_id, ref_code, update)
+        session.step = ConversationStep.DONE
+        return
+        
+    # Periksa apakah ada sesi pengisian keluhan aktif yang sedang berjalan
+    if session.step == ConversationStep.PROCESSING:
+        await update.message.reply_text("⏳ Komplain Anda saat ini sedang diproses oleh tim agen kami...")
+        return
+    elif session.step == ConversationStep.GATHERING:
+        await update.message.reply_text("📝 Anda sedang berada dalam proses penginputan komplain. Silakan kirimkan keluhan Anda.")
+        return
+
+    # Pindahkan step ke checking_status untuk menangkap input teks berikutnya
+    session.step = ConversationStep.CHECKING_STATUS
+    
+    keyboard = [
+        [InlineKeyboardButton("🔍 Lacak Laporan Terakhir", callback_data="status_last")],
+        [InlineKeyboardButton("❌ Batal", callback_data="status_cancel")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(
+        "🔍 *Lacak Status Komplain*\n\n"
+        "Untuk melihat perkembangan laporan keluhan Anda, silakan lakukan salah satu langkah berikut:\n\n"
+        "1️⃣ **Balas obrolan ini langsung** dengan mengetik kode referensi keluhan Anda (misal: `tg-8289635135-xxxxxxxx`)\n"
+        "2️⃣ **Klik tombol di bawah ini** untuk melacak laporan paling terakhir yang Anda buat secara otomatis.",
+        reply_markup=reply_markup,
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -236,6 +279,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session = session_manager.get(chat_id)
 
     logger.info("telegram.text_received", chat_id=chat_id, step=session.step, text_len=len(text))
+
+    # --- Jika sedang mengecek status komplain ---
+    if session.step == ConversationStep.CHECKING_STATUS:
+        ref_code = text.strip()
+        success = await query_and_send_status(chat_id, ref_code, update)
+        if success:
+            session.step = ConversationStep.DONE
+        return
 
     # --- Jika belum greeting, init dulu ---
     if session.step == ConversationStep.GREETING:
@@ -518,6 +569,23 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             "📝 *Komplain Baru*\n\nSilakan ceritakan masalah Anda:",
             parse_mode=ParseMode.MARKDOWN,
+        )
+    elif query.data == "status_last":
+        chat_id = update.effective_chat.id
+        session = session_manager.get(chat_id)
+        # Query status keluhan terakhir milik pelanggan ini
+        success = await query_and_send_status(chat_id, None, query)
+        if success:
+            session.step = ConversationStep.DONE
+        else:
+            session.step = ConversationStep.GREETING
+    elif query.data == "status_cancel":
+        chat_id = update.effective_chat.id
+        session = session_manager.get(chat_id)
+        session.step = ConversationStep.GREETING
+        await query.message.edit_text(
+            "🚫 Pelacakan status dibatalkan. Ketik /start jika Anda ingin berinteraksi kembali.",
+            parse_mode=ParseMode.MARKDOWN
         )
     elif query.data.startswith("faq_"):
         ans = ""
