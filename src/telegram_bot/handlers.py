@@ -416,10 +416,37 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     Mengelola alur multi-turn conversation.
     """
     chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
+    chat_title = update.effective_chat.title or ""
     text = update.message.text.strip()
     session = session_manager.get(chat_id)
 
     logger.info("telegram.text_received", chat_id=chat_id, step=session.step, text_len=len(text))
+
+    # --- Jika pesan dikirim di dalam Grup/Supergrup (Operasional Gudang/Kurir) ---
+    if chat_type in ["group", "supergroup"]:
+        # Auto-register group chats if the title matches and they aren't registered yet
+        data = load_group_chats()
+        updated = False
+        title_lower = chat_title.lower()
+        if "gudang" in title_lower or "warehouse" in title_lower:
+            if data.get("warehouse_chat_id") != chat_id:
+                data["warehouse_chat_id"] = chat_id
+                updated = True
+                logger.info("telegram.auto_register_warehouse", chat_id=chat_id, title=chat_title)
+        elif "kurir" in title_lower or "courier" in title_lower:
+            if data.get("courier_chat_id") != chat_id:
+                data["courier_chat_id"] = chat_id
+                updated = True
+                logger.info("telegram.auto_register_courier", chat_id=chat_id, title=chat_title)
+        
+        if updated:
+            save_group_chats(data)
+            await update.message.reply_text(
+                f"⚡ *[Auto-Register]* Grup ini otomatis terdaftar sebagai "
+                f"{'Gudang Qhomemart' if 'gudang' in title_lower or 'warehouse' in title_lower else 'Kurir Qhomemart'}!"
+            )
+        return  # Jangan proses percakapan AI untuk pesan grup biasa
 
     # --- Jika sedang mengecek status komplain ---
     if session.step == ConversationStep.CHECKING_STATUS:
