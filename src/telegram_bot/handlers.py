@@ -12,6 +12,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ParseMode, ChatAction
 
+from src.config import get_settings
 from src.telegram_bot.session import session_manager, ConversationStep
 from src.graph.workflow import get_graph
 from src.graph.state import GraphState
