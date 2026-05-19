@@ -73,11 +73,18 @@ INSERT INTO order_items (order_id, product_id, quantity, subtotal_idr) VALUES
 -- -----------------------------------------------------------------------------
 INSERT INTO deliveries (tracking_id, order_id, courier_name, status, condition_on_pickup, damage_reported_by_courier, delivery_logs) VALUES
 (
-    'QHM-DEL-8821345', 'ORD-QHM-003', 'Armada Qhomemart', 'delivered', 'intact', FALSE,
+    'QHM-DEL-0011234', 'ORD-QHM-001', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
+    '[
+        {"time": "2026-05-14 08:00", "status": "Barang dimuat ke armada internal", "location": "Yogyakarta"},
+        {"time": "2026-05-14 11:30", "status": "Terkirim — guncangan keras di jalan berlubang, tumpukan granit retak", "location": "Sleman"}
+    ]'::jsonb
+),
+(
+    'QHM-DEL-8821345', 'ORD-QHM-003', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
     '[
         {"time": "2026-05-12 08:00", "status": "Barang diambil dari Gudang Qhomemart Jogja", "location": "Yogyakarta"},
-        {"time": "2026-05-12 10:30", "status": "Dalam perjalanan (Armada Internal)", "location": "Sleman"},
-        {"time": "2026-05-12 16:45", "status": "Terkirim — diterima oleh: Bpk. Supri", "location": "Sleman"}
+        {"time": "2026-05-12 10:30", "status": "Dalam perjalanan — tergelincir guncangan parah", "location": "Sleman"},
+        {"time": "2026-05-12 16:45", "status": "Terkirim — terdeteksi benturan parah pada packing kayu", "location": "Sleman"}
     ]'::jsonb
 ),
 (
@@ -97,10 +104,10 @@ INSERT INTO deliveries (tracking_id, order_id, courier_name, status, condition_o
     ]'::jsonb
 ),
 (
-    'QHM-DEL-0061234', 'ORD-QHM-006', 'Armada Qhomemart', 'delivered', 'intact', FALSE,
+    'QHM-DEL-0061234', 'ORD-QHM-006', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
     '[
         {"time": "2026-05-17 08:00", "status": "Barang diambil dari Gudang Cat", "location": "Yogyakarta"},
-        {"time": "2026-05-17 11:15", "status": "Terkirim", "location": "Sleman"}
+        {"time": "2026-05-17 11:15", "status": "Terkirim — kaleng penyok dan rembes cat keluar", "location": "Sleman"}
     ]'::jsonb
 ),
 (
@@ -111,10 +118,10 @@ INSERT INTO deliveries (tracking_id, order_id, courier_name, status, condition_o
     ]'::jsonb
 ),
 (
-    'SCE-8812341', 'ORD-QHM-008', 'SiCepat', 'delivered', 'intact', FALSE,
+    'SCE-8812341', 'ORD-QHM-008', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE,
     '[
         {"time": "2026-05-15 10:00", "status": "Paket diserahkan ke kurir", "location": "Yogyakarta"},
-        {"time": "2026-05-15 16:30", "status": "Diterima oleh Ybs", "location": "Bantul"}
+        {"time": "2026-05-15 16:30", "status": "Diterima — box penyok basah terkena benturan cargo", "location": "Bantul"}
     ]'::jsonb
 ),
 (
