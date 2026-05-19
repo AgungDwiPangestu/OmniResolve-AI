@@ -21,3 +21,7 @@ services:
     # Expose port hanya di lokal (agar bisa akses dari host dengan tools seperti DBeaver)
     ports:
       - "5432:5432"
+
+  visualizer:
+    volumes:
+      - ./visualizer/backend/floors.toml:/app/floors.toml:Z

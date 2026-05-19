@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     # --- App ---
     environment: str = "development"
     log_level: str = "INFO"
+    base_url: str = "http://localhost:8001"
 
 
 @lru_cache

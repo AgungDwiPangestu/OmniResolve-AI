@@ -53,6 +53,9 @@ async def supply_chain_orchestrator_node(state: GraphState) -> dict:
     complaint = state.get("complaint")
 
     logger.info("orchestrator.start", session_id=session_id)
+    from src.logger import broadcast_event
+    broadcast_event("subagent_start", session_id, {"agent_id": "Supply Chain Orchestrator"})
+    broadcast_event("reporting", session_id, {"agent_id": "Supply Chain Orchestrator", "message": "Mengeksekusi keputusan negosiasi (ERP, Kurir, PO)..."})
 
     if not decision or not complaint:
         return {"error": "Missing decision or complaint for orchestration"}
@@ -155,6 +158,11 @@ Reasoning: {decision['reasoning']}
             actions_failed=len(actions_failed),
         )
 
+        broadcast_event("subagent_stop", session_id, {
+            "agent_id": "Supply Chain Orchestrator",
+            "message": f"Eksekusi Selesai. Aksi Berhasil: {len(actions_taken)}"
+        })
+
         return {
             "orchestrator_action": orchestrator_action,
             "final_response": final_response,
@@ -189,6 +197,10 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
         session_id=session_id,
         value=decision["compensation_value_idr"] if decision else 0,
     )
+    
+    from src.logger import broadcast_event
+    broadcast_event("subagent_start", session_id, {"agent_id": "HITL Supervisor"})
+    broadcast_event("reporting", session_id, {"agent_id": "HITL Supervisor", "message": "Mengirimkan email notifikasi ke manajer terkait..."})
 
     subject = f"[OmniResolve-AI] ⚠️ Tindakan Diperlukan: Approval Kompensasi (ID: {session_id[:8]})"
     
@@ -288,7 +300,7 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
         managers = ["haris.sandi23@students.utdi.ac.id", "agung.dwi23@students.utdi.ac.id"]
         msg["To"] = ", ".join(managers)
 
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=3.0) as server:
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_pass)
             server.send_message(msg)
@@ -298,6 +310,11 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
         logger.info("hitl.email_notification_sent", session_id=session_id)
     except Exception as e:
         logger.warning("hitl.email_notification_failed", error=str(e))
+
+    broadcast_event("subagent_stop", session_id, {
+        "agent_id": "HITL Supervisor",
+        "message": "Menunggu persetujuan manajer via Dashboard."
+    })
 
     # Setelah notifikasi, tetap lanjut ke orchestrator (dengan flag sudah dinotif)
     return {

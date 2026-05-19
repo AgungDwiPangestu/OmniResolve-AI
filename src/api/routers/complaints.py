@@ -97,6 +97,9 @@ async def submit_complaint(request: ComplaintRequest):
     session_id = request.session_id or str(uuid.uuid4())
     logger.info("complaint.received", session_id=session_id, message_len=len(request.message))
 
+    from src.logger import broadcast_event
+    broadcast_event("session_start", session_id, {"project_name": "OmniResolve-AI"})
+
     initial_state: GraphState = {
         "messages": [],
         "raw_input": request.message,
@@ -120,6 +123,8 @@ async def submit_complaint(request: ComplaintRequest):
         # Simpan ke tabel complaint_sessions sebagai history/log nyata
         await save_session_to_db(session_id, request.message, final_state)
 
+        broadcast_event("session_end", session_id, {"project_name": "OmniResolve-AI"})
+
         return ComplaintResponse(
             session_id=session_id,
             response=final_state.get("final_response") or "Keluhan Anda sedang diproses.",
@@ -131,6 +136,7 @@ async def submit_complaint(request: ComplaintRequest):
 
     except Exception as e:
         logger.error("complaint.pipeline_error", session_id=session_id, error=str(e))
+        broadcast_event("session_end", session_id, {"project_name": "OmniResolve-AI"})
         raise HTTPException(
             status_code=500,
             detail=f"Pipeline error: {str(e)}",

@@ -60,7 +60,12 @@ async def liaison_agent_node(state: GraphState) -> dict:
     Node Liaison Agent dalam LangGraph workflow.
     Dipanggil di awal workflow untuk memproses input pelanggan.
     """
-    logger.info("liaison_agent.start", session_id=state["session_id"])
+    session_id = state["session_id"]
+    logger.info("liaison_agent.start", session_id=session_id)
+    from src.logger import broadcast_event
+    broadcast_event("subagent_start", session_id, {"agent_id": "Liaison Agent"})
+    broadcast_event("reporting", session_id, {"agent_id": "Liaison Agent", "message": "Berinteraksi dengan pelanggan, ekstrak entitas dan analisis sentimen..."})
+    
     llm = get_llm()
 
     messages = [
@@ -104,12 +109,17 @@ async def liaison_agent_node(state: GraphState) -> dict:
 
         logger.info(
             "liaison_agent.done",
-            session_id=state["session_id"],
+            session_id=session_id,
             order_id=complaint["order_id"],
             complaint_type=complaint["complaint_type"],
             sentiment=complaint["sentiment_score"],
             data_complete=result.get("data_complete"),
         )
+        
+        broadcast_event("subagent_stop", session_id, {
+            "agent_id": "Liaison Agent", 
+            "message": f"Menemukan Order: {complaint['order_id']} | Tipe: {complaint['complaint_type']}"
+        })
 
         return {
             "complaint": complaint,

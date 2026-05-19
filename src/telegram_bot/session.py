@@ -17,6 +17,7 @@ class ConversationStep(str, Enum):
     PROCESSING  = "processing"      # Pipeline agent sedang berjalan
     DONE        = "done"            # Selesai, siap terima komplain baru
     ESCALATED   = "escalated"       # Menunggu respon CS Manusia
+    CHECKING_STATUS = "checking_status" # Menunggu input kode referensi atau tombol lacak
 
 
 @dataclass

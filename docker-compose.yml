@@ -52,6 +52,25 @@ services:
     volumes:
       - ./src:/app/src  # Hot-reload di dev (override di prod)
 
+  # ---------------------------------------------------------------------------
+  # Claude Office Visualizer - GUI Log Tracker
+  # ---------------------------------------------------------------------------
+  visualizer:
+    build:
+      context: ./visualizer
+      dockerfile: Dockerfile
+    container_name: omni_visualizer
+    restart: unless-stopped
+    ports:
+      - "8001:8002"
+    volumes:
+      - visualizer_db:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/visualizer.db
+      - SERVE_STATIC=true
+
 volumes:
   postgres_data:
+    driver: local
+  visualizer_db:
     driver: local

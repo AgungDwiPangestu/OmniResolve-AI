@@ -29,7 +29,8 @@ SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
 1. KLAIM TIDAK VALID / FRAUD: Keputusan "reject", kompensasi Rp 0.
 2. BARANG RUSAK (Damaged): 
    - Opsi Utama: "replacement" (Ganti Baru).
-   - Opsi Tambahan (jika pelanggan loyal): Berikan voucher tambahan Rp 100.000.
+   - Opsi Khusus (PENTING): Jika pelanggan secara eksplisit MENOLAK penggantian barang dan meminta "refund" (pengembalian dana) karena situasi mendesak (misal: proyek mendesak dan sudah terlanjur beli di tempat lain), maka hormati keinginan pelanggan dan berikan keputusan "refund" senilai 100% harga produk.
+   - Opsi Tambahan (untuk ganti baru/replacement): Berikan voucher diskon/promo tambahan senilai Rp 50.000 (untuk menghindari kerugian berlebih bagi perusahaan) di samping mengirimkan kembali barang yang baru dengan kondisi baik.
 3. SALAH KIRIM (Wrong Item):
    - Opsi: "replacement" (Kirim ulang) + Voucher Maaf Rp 50.000.
 4. STOK HABIS (Stock-out):
@@ -38,6 +39,12 @@ SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
      B. "voucher" sebesar 110% dari harga produk (sebagai insentif agar tidak tarik uang).
 5. BARANG TERLAMBAT (Late):
    - Berikan "voucher" senilai 10% dari harga barang. Jika keterlambatan > 5 hari, naikkan ke 15%.
+
+NILAI KOMPENSASI (compensation_value_idr):
+- Nilai ini harus mencerminkan TOTAL biaya finansial kompensasi yang diterima pelanggan secara jelas di telegram:
+  * Jika keputusan adalah "refund", maka nilai 'compensation_value_idr' WAJIB diisi sebesar: Harga Produk yang di-refund + Voucher Tambahan (jika berhak).
+  * Jika keputusan adalah "replacement", maka nilai 'compensation_value_idr' WAJIB diisi sebesar: Harga Produk pengganti + Voucher Tambahan (jika berhak).
+  * Jangan pernah hanya menuliskan nilai voucher tambahannya saja! Pelanggan akan bingung mengira barangnya dihargai sangat murah.
 
 OUTPUT FORMAT (JSON):
 {
@@ -52,7 +59,7 @@ OUTPUT FORMAT (JSON):
 }
 
 ATURAN HITL:
-- Jika total nilai (atau salah satu opsi) > Rp 1.000.000 → set requires_human_approval = true.
+- Jika total nilai kompensasi (atau salah satu opsi) > Rp 1.000.000 → set requires_human_approval = true.
 
 LOGIKA LOYALITAS (CLV):
 - Jika CLV > 10jt, selalu tambahkan Voucher Loyalty Rp 200.000 di luar solusi utama.
@@ -79,6 +86,9 @@ async def strategic_negotiator_node(state: GraphState) -> dict:
     settings = get_settings()
 
     logger.info("negotiator.start", session_id=session_id)
+    from src.logger import broadcast_event
+    broadcast_event("subagent_start", session_id, {"agent_id": "Strategic Negotiator"})
+    broadcast_event("reporting", session_id, {"agent_id": "Strategic Negotiator", "message": "Menganalisis Customer Lifetime Value (CLV) dan kebijakan SOP..."})
 
     if not complaint or not audit:
         return {"error": "Missing complaint or audit data for negotiation"}
@@ -138,20 +148,47 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
             
         result = json.loads(raw_content.strip())
 
+        decision_type = result.get("decision_type", "reject")
         compensation_value = float(result.get("compensation_value_idr", 0.0))
+
+        # --- Programmatic Guardrails (Resolves Customer Request perfectly) ---
+        desc_lower = (complaint.get("complaint_description") or "").lower()
+        refund_keywords = ["refund", "dana kembali", "kembalikan uang", "kembalikan dana", "uang kembali", "tidak mau ganti", "sudah beli di tempat lain", "beli di toko lain"]
         
+        # Guardrail 1: Force decision to refund if customer explicitly rejects replacement/requests refund
+        if any(kw in desc_lower for kw in refund_keywords):
+            if decision_type == "replacement":
+                logger.info("guardrail.override_decision_type", original=decision_type, new="refund")
+                decision_type = "refund"
+                
+        # Guardrail 2: Ensure compensation_value_idr reflects actual product price for refund/replacement
+        if decision_type in ("refund", "replacement") and product_price > 0:
+            minimum_value = product_price
+            # If loyal customer (CLV > 10jt), add loyalty voucher Rp 200.000 (standard SOP)
+            if customer_profile.get("lifetime_value_idr", 0) > 10_000_000:
+                minimum_value += 200_000.0
+            elif decision_type == "replacement" and any(w in desc_lower for w in ["rusak", "hancur", "pecah", "retak"]):
+                # User business rule: limit to Rp 50,000 discount voucher to avoid company loss
+                minimum_value += 50_000.0
+                
+            if compensation_value < minimum_value:
+                logger.info("guardrail.override_compensation_value", original=compensation_value, new=minimum_value)
+                compensation_value = minimum_value
+
         # Check if any options exceed threshold
         options = result.get("options", [])
         option_exceeds = any(float(opt.get("value", 0)) > settings.hitl_threshold_idr for opt in options)
         
+        # Guardrail 3: Force HITL approval if value exceeds the threshold
         requires_hitl = (
             result.get("requires_human_approval", False)
             or compensation_value > settings.hitl_threshold_idr
             or option_exceeds
+            or (decision_type == "refund" and product_price > settings.hitl_threshold_idr)
         )
 
         decision: CompensationDecision = {
-            "decision_type": result.get("decision_type", "reject"),
+            "decision_type": decision_type,
             "compensation_value_idr": compensation_value,
             "reasoning": result.get("reasoning", ""),
             "requires_human_approval": requires_hitl,
@@ -165,6 +202,11 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
             value=decision["compensation_value_idr"],
             hitl=decision["requires_human_approval"],
         )
+        
+        broadcast_event("subagent_stop", session_id, {
+            "agent_id": "Strategic Negotiator",
+            "message": f"Keputusan: {decision['decision_type']} - Nilai: Rp {decision['compensation_value_idr']:,.0f}"
+        })
 
         return {
             "customer_profile": customer_profile,

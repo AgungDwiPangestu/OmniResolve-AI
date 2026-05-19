@@ -11,6 +11,10 @@ Juga mengatur lifecycle Telegram bot:
 import asyncio
 import structlog
 from contextlib import asynccontextmanager
+
+from src.logger import setup_logging
+setup_logging()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

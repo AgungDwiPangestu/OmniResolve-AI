@@ -87,6 +87,9 @@ async def logistics_auditor_node(state: GraphState) -> dict:
     retry_count = state.get("audit_retry_count", 0)
 
     logger.info("auditor.start", session_id=session_id, retry=retry_count)
+    from src.logger import broadcast_event
+    broadcast_event("subagent_start", session_id, {"agent_id": "Logistics Auditor"})
+    broadcast_event("reporting", session_id, {"agent_id": "Logistics Auditor", "message": "Memeriksa log kurir dan CCTV metadata untuk verifikasi klaim..."})
 
     if not complaint:
         return {"audit_result": None, "error": "No complaint data to audit"}
@@ -175,6 +178,11 @@ LOG KURIR / PENGIRIMAN:
             claim_valid=audit_result["claim_valid"],
             need_more_data=result.get("need_more_data", False),
         )
+        
+        broadcast_event("subagent_stop", session_id, {
+            "agent_id": "Logistics Auditor",
+            "message": f"Klaim Valid: {audit_result['claim_valid']}. {audit_result['audit_notes']}"
+        })
 
         return {
             "audit_result": audit_result,
