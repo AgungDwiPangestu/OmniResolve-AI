@@ -88,17 +88,105 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handler untuk command /status."""
     chat_id = update.effective_chat.id
-    session = session_manager.get(chat_id)
+    
+    # Ambil argumen jika ada (misal: /status tg-8289635135-525038dd)
+    args = context.args
+    ref_code = None
+    if args:
+        ref_code = args[0].strip()
+        
+    if not ref_code:
+        # Periksa apakah ada sesi aktif yang sedang berjalan untuk chat ini
+        session = session_manager.get(chat_id)
+        if session.step == ConversationStep.PROCESSING:
+            await update.message.reply_text("⏳ Komplain Anda saat ini sedang diproses oleh tim agen kami...")
+            return
+        elif session.step == ConversationStep.GATHERING:
+            await update.message.reply_text("📝 Anda sedang berada dalam proses penginputan komplain. Silakan kirimkan keluhan Anda.")
+            return
 
-    if session.step == ConversationStep.DONE:
-        await update.message.reply_text(
-            "✅ Komplain Anda telah selesai diproses. Ketik /start untuk komplain baru."
+    # Ambil status dari database PostgreSQL
+    settings = get_settings()
+    import asyncpg
+    
+    try:
+        conn = await asyncpg.connect(
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            database=settings.postgres_db
         )
-    elif session.step == ConversationStep.PROCESSING:
-        await update.message.reply_text("⏳ Komplain Anda sedang diproses...")
-    else:
+        
+        if ref_code:
+            # Cari berdasarkan ID sesi spesifik
+            row = await conn.fetchrow(
+                "SELECT session_id, status, decision_type, compensation_value_idr, final_response, created_at FROM complaint_sessions WHERE session_id = $1",
+                ref_code
+            )
+        else:
+            # Cari laporan terakhir untuk chat_id ini
+            row = await conn.fetchrow(
+                "SELECT session_id, status, decision_type, compensation_value_idr, final_response, created_at FROM complaint_sessions WHERE session_id LIKE $1 ORDER BY created_at DESC LIMIT 1",
+                f"tg-{chat_id}-%"
+            )
+            
+        await conn.close()
+        
+        if row:
+            session_id = row["session_id"]
+            status = row["status"]
+            decision_type = row["decision_type"]
+            comp_value = row["compensation_value_idr"] or 0
+            final_response = row["final_response"]
+            
+            # Map status
+            status_map = {
+                "completed": "✅ SELESAI (Resolved)",
+                "pending_hitl": "⏳ MENUNGGU PERSETUJUAN SUPERVISOR (Pending HITL Approval)",
+                "escalated": "👨‍💼 DIALIHKAN KE CS MANUSIA (Escalated to CS)",
+                "rejected": "❌ KLAIM DITOLAK (Rejected)"
+            }
+            status_label = status_map.get(status, status.upper())
+            
+            type_emoji = {
+                "replacement": "🔄 Ganti Baru (Replacement)",
+                "refund": "💰 Pengembalian Dana (Refund)",
+                "voucher": "🎫 Voucher Kompensasi",
+                "reject": "❌ Klaim Ditolak",
+            }
+            decision_label = type_emoji.get(decision_type, decision_type or "Sedang diproses")
+            
+            msg = (
+                f"📋 *Laporan Komplain: `{session_id}`*\n\n"
+                f"• *Status:* {status_label}\n"
+                f"• *Keputusan:* {decision_label}\n"
+            )
+            if comp_value > 0:
+                msg += f"• *Nilai Kompensasi:* Rp {comp_value:,.0f}\n"
+                
+            if final_response:
+                msg += f"\n💬 *Tindak Lanjut Perusahaan:*\n_{final_response}_"
+            else:
+                msg += f"\n💬 *Tindak Lanjut:* Keluhan Anda telah tercatat dan sedang dalam penyelesaian operasional."
+                
+            await update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+        else:
+            if ref_code:
+                await update.message.reply_text(
+                    f"❌ Referensi keluhan `{ref_code}` tidak ditemukan di sistem kami. "
+                    "Pastikan kode referensi yang Anda masukkan sudah benar."
+                )
+            else:
+                await update.message.reply_text(
+                    "📝 Belum ada komplain aktif yang tercatat untuk akun Anda. "
+                    "Silakan ketik /start untuk memulai keluhan baru."
+                )
+                
+    except Exception as e:
+        logger.error("telegram.status_query_error", error=str(e))
         await update.message.reply_text(
-            "📝 Belum ada komplain aktif. Ketik /start untuk memulai."
+            "⚠️ Gagal menghubungkan ke server status. Silakan coba beberapa saat lagi."
         )
 
 
@@ -373,7 +461,8 @@ async def _run_pipeline(update, context, session, chat_id: int):
                 f"• Tipe: {decision_label}\n"
                 f"• Nilai kompensasi: Rp {decision['compensation_value_idr']:,.0f}"
                 f"{audit_status}\n"
-                f"• Ref: `{session_id}`"
+                f"• Ref: `{session_id}`\n\n"
+                f"💡 _Anda dapat memantau status atau detail tindak lanjut laporan ini kapan saja dengan mengetik:_ `/status {session_id}`"
             )
             if decision.get("requires_human_approval"):
                 detail_text += "\n\n⚠️ _Kasus ini memerlukan persetujuan supervisor karena nilai kompensasi melebihi batas otomatis. Kami akan menghubungi Anda dalam 1x24 jam._"
@@ -403,9 +492,12 @@ async def _run_pipeline(update, context, session, chat_id: int):
         await context.bot.send_message(
             chat_id=chat_id,
             text=(
-                "😔 Maaf, sistem kami sedang mengalami gangguan sementara.\n"
-                f"Keluhan Anda telah dicatat dengan referensi: `{session_id}`\n\n"
-                "Tim kami akan segera menghubungi Anda."
+                "✅ *Laporan Keluhan Tercatat*\n\n"
+                "Sistem kami telah mencatat laporan keluhan Anda dengan kode referensi:\n"
+                f"`{session_id}`\n\n"
+                "💡 *Tips:* Silakan salin kode referensi di atas. Anda dapat memeriksa status tindak lanjut, detail keputusan, serta follow-up dari perusahaan kapan saja dengan mengetik:\n"
+                f"`/status {session_id}`\n\n"
+                "Tim kami sedang memproses penyelesaian laporan Anda."
             ),
             parse_mode=ParseMode.MARKDOWN,
         )
