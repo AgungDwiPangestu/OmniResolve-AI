@@ -30,7 +30,7 @@ SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
 2. BARANG RUSAK (Damaged): 
    - Opsi Utama: "replacement" (Ganti Baru).
    - Opsi Khusus (PENTING): Jika pelanggan secara eksplisit MENOLAK penggantian barang dan meminta "refund" (pengembalian dana) karena situasi mendesak (misal: proyek mendesak dan sudah terlanjur beli di tempat lain), maka hormati keinginan pelanggan dan berikan keputusan "refund" senilai 100% harga produk.
-   - Opsi Tambahan (jika pelanggan loyal): Berikan voucher tambahan Rp 100.000.
+   - Opsi Tambahan (untuk ganti baru/replacement): Berikan voucher diskon/promo tambahan senilai Rp 50.000 (untuk menghindari kerugian berlebih bagi perusahaan) di samping mengirimkan kembali barang yang baru dengan kondisi baik.
 3. SALAH KIRIM (Wrong Item):
    - Opsi: "replacement" (Kirim ulang) + Voucher Maaf Rp 50.000.
 4. STOK HABIS (Stock-out):
@@ -167,6 +167,9 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
             # If loyal customer (CLV > 10jt), add loyalty voucher Rp 200.000 (standard SOP)
             if customer_profile.get("lifetime_value_idr", 0) > 10_000_000:
                 minimum_value += 200_000.0
+            elif decision_type == "replacement" and any(w in desc_lower for w in ["rusak", "hancur", "pecah", "retak"]):
+                # User business rule: limit to Rp 50,000 discount voucher to avoid company loss
+                minimum_value += 50_000.0
                 
             if compensation_value < minimum_value:
                 logger.info("guardrail.override_compensation_value", original=compensation_value, new=minimum_value)
