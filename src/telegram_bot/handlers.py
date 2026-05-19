@@ -19,6 +19,100 @@ from src.graph.state import GraphState
 
 logger = structlog.get_logger(__name__)
 
+import os
+import json
+import asyncpg
+from datetime import datetime
+
+GROUP_CHATS_FILE = os.path.join(os.path.dirname(__file__), "group_chats.json")
+
+def load_group_chats() -> dict:
+    if os.path.exists(GROUP_CHATS_FILE):
+        try:
+            with open(GROUP_CHATS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"warehouse_chat_id": None, "courier_chat_id": None}
+
+def save_group_chats(data: dict):
+    try:
+        with open(GROUP_CHATS_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.error("telegram.save_group_chats_error", error=str(e))
+
+
+async def send_to_warehouse_group(context, session_id: str, order_id: str):
+    """Mengirim instruksi pengambilan barang ke grup Gudang yang terdaftar."""
+    data = load_group_chats()
+    warehouse_chat_id = data.get("warehouse_chat_id")
+    
+    if not warehouse_chat_id:
+        logger.warning("telegram.warehouse_group_not_registered", session_id=session_id)
+        return
+        
+    settings = get_settings()
+    try:
+        conn = await asyncpg.connect(
+            user=settings.postgres_user,
+            password=settings.postgres_password,
+            host=settings.postgres_host,
+            port=settings.postgres_port,
+            database=settings.postgres_db
+        )
+        
+        # Ambil produk dan detail pelanggan berdasarkan order_id
+        query = """
+            SELECT c.customer_name, c.phone, c.address, p.product_name, oi.quantity
+            FROM orders o
+            JOIN customers c ON o.customer_id = c.customer_id
+            JOIN order_items oi ON o.order_id = oi.order_id
+            JOIN products p ON oi.product_id = p.product_id
+            WHERE o.order_id = $1
+        """
+        rows = await conn.fetch(query, order_id)
+        await conn.close()
+        
+        if not rows:
+            logger.warning("telegram.warehouse_order_not_found", order_id=order_id)
+            return
+            
+        customer_name = rows[0]["customer_name"]
+        phone = rows[0]["phone"]
+        address = rows[0]["address"]
+        
+        # Format daftar produk
+        items_list = ""
+        for row in rows:
+            items_list += f"• 📦 *{row['product_name']}* - {row['quantity']} unit\n"
+            
+        msg = (
+            f"📦 *PERINTAH PENGAMBILAN BARANG GUDANG*\n\n"
+            f"Ditemukan laporan kerusakan valid untuk pelanggan:\n"
+            f"• *Nama Pelanggan:* {customer_name} ({phone})\n"
+            f"• *Alamat Pengiriman:* {address}\n"
+            f"• *Nomor Order:* `{order_id}`\n"
+            f"• *Ref Sesi:* `{session_id}`\n\n"
+            f"📋 *Daftar Barang yang Harus Disiapkan:*\n"
+            f"{items_list}\n"
+            f"💡 _Silakan gudang siapkan barang tersebut. Begitu barang siap diserahkan ke kurir, silakan klik tombol di bawah ini._"
+        )
+        
+        keyboard = [[InlineKeyboardButton("✅ Selesai (Siap Dikirim)", callback_data=f"wh_done:{session_id}:{order_id}")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await context.bot.send_message(
+            chat_id=warehouse_chat_id,
+            text=msg,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        logger.info("telegram.sent_to_warehouse", session_id=session_id, order_id=order_id)
+        
+    except Exception as e:
+        logger.error("telegram.send_to_warehouse_error", error=str(e))
+
 # --- Pesan template ---
 WELCOME_MSG = """👋 *Selamat datang di OmniResolve AI!*
 
@@ -188,6 +282,52 @@ async def query_and_send_status(chat_id: int, ref_code: str | None, update_or_qu
         else:
             await msg_target.reply_text(err_msg)
         return False
+
+
+async def cmd_register_warehouse(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk mendaftarkan grup gudang (Warehouse)."""
+    chat_id = update.effective_chat.id
+    chat_title = update.effective_chat.title or "Grup"
+    
+    # Pastikan ini dipanggil di grup/supergrup
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        await update.message.reply_text("⚠️ Perintah ini hanya dapat dijalankan di dalam grup Telegram.")
+        return
+        
+    data = load_group_chats()
+    data["warehouse_chat_id"] = chat_id
+    save_group_chats(data)
+    
+    await update.message.reply_text(
+        f"🚀 *Grup Gudang Berhasil Didaftarkan!*\n\n"
+        f"• *Nama Grup:* `{chat_title}`\n"
+        f"• *Chat ID:* `{chat_id}`\n\n"
+        f"Semua pesanan penggantian barang (Replacement) di bawah Rp 1.000.000 akan otomatis dikirim ke grup ini untuk dipersiapkan.",
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+
+async def cmd_register_courier(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler untuk mendaftarkan grup kurir (Courier)."""
+    chat_id = update.effective_chat.id
+    chat_title = update.effective_chat.title or "Grup"
+    
+    # Pastikan ini dipanggil di grup/supergrup
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        await update.message.reply_text("⚠️ Perintah ini hanya dapat dijalankan di dalam grup Telegram.")
+        return
+        
+    data = load_group_chats()
+    data["courier_chat_id"] = chat_id
+    save_group_chats(data)
+    
+    await update.message.reply_text(
+        f"🚚 *Grup Kurir Berhasil Didaftarkan!*\n\n"
+        f"• *Nama Grup:* `{chat_title}`\n"
+        f"• *Chat ID:* `{chat_id}`\n\n"
+        f"Instruksi pengiriman barang yang sudah siap dari gudang akan otomatis dikirim ke grup ini.",
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -525,6 +665,10 @@ async def _run_pipeline(update, context, session, chat_id: int):
                 parse_mode=ParseMode.MARKDOWN,
             )
 
+            # Kirim perintah pengambilan barang ke Gudang secara otomatis jika merupakan replacement dan di bawah 1 juta (tidak butuh human approval)
+            if decision['decision_type'] == 'replacement' and not decision.get("requires_human_approval") and session.order_id and session.order_id != "unknown":
+                await send_to_warehouse_group(context, session_id, session.order_id)
+
         # Tombol untuk komplain baru
         keyboard = [[InlineKeyboardButton("🔄 Komplain Baru", callback_data="new_complaint")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -588,6 +732,98 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🚫 Pelacakan status dibatalkan. Ketik /start jika Anda ingin berinteraksi kembali.",
             parse_mode=ParseMode.MARKDOWN
         )
+    elif query.data.startswith("wh_done:"):
+        parts = query.data.split(":")
+        session_id = parts[1]
+        order_id = parts[2]
+        
+        # Ambil detail dari database PostgreSQL
+        settings = get_settings()
+        import asyncpg
+        from datetime import datetime
+        
+        try:
+            conn = await asyncpg.connect(
+                user=settings.postgres_user,
+                password=settings.postgres_password,
+                host=settings.postgres_host,
+                port=settings.postgres_port,
+                database=settings.postgres_db
+            )
+            
+            query_details = """
+                SELECT c.customer_name, c.phone, c.address, p.product_name, oi.quantity
+                FROM orders o
+                JOIN customers c ON o.customer_id = c.customer_id
+                JOIN order_items oi ON o.order_id = oi.order_id
+                JOIN products p ON oi.product_id = p.product_id
+                WHERE o.order_id = $1
+            """
+            rows = await conn.fetch(query_details, order_id)
+            await conn.close()
+            
+            if rows:
+                customer_name = rows[0]["customer_name"]
+                phone = rows[0]["phone"]
+                address = rows[0]["address"]
+                
+                # Format daftar produk
+                items_list = ""
+                for row in rows:
+                    items_list += f"• 📦 *{row['product_name']}* - {row['quantity']} unit\n"
+                
+                # Cek apakah grup kurir terdaftar
+                group_data = load_group_chats()
+                courier_chat_id = group_data.get("courier_chat_id")
+                
+                if courier_chat_id:
+                    # Kirim pesan ke grup Kurir
+                    courier_msg = (
+                        f"🚚 *PENGIRIMAN BARANG READY (KURIR)*\n\n"
+                        f"Barang pengganti telah selesai disiapkan oleh gudang dan siap dikirim!\n"
+                        f"• *Nama Penerima:* {customer_name} ({phone})\n"
+                        f"• *Alamat Penerima:* {address}\n"
+                        f"• *Nomor Order:* `{order_id}`\n"
+                        f"• *Ref Sesi:* `{session_id}`\n\n"
+                        f"📦 *Daftar Barang untuk Dikirim:*\n"
+                        f"{items_list}\n"
+                        f"🚀 _Silakan kurir untuk segera mengambil barang di gudang dan mengantarkannya ke alamat penerima._"
+                    )
+                    await context.bot.send_message(
+                        chat_id=courier_chat_id,
+                        text=courier_msg,
+                        parse_mode=ParseMode.MARKDOWN
+                    )
+                    
+                    # Update pesan di grup gudang menjadi hijau/sukses
+                    timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    sender_username = query.from_user.username or query.from_user.first_name
+                    
+                    warehouse_updated_msg = (
+                        f"✅ *Barang Telah Disiapkan oleh Gudang & Siap Kirim*\n\n"
+                        f"• *Petugas Gudang:* @{sender_username}\n"
+                        f"• *Waktu Selesai:* {timestamp}\n"
+                        f"• *Penerima:* {customer_name} ({phone})\n"
+                        f"• *Nomor Order:* `{order_id}`\n\n"
+                        f"📋 *Daftar Barang:* \n"
+                        f"{items_list}\n"
+                        f"📍 *Status:* _Instruksi pengiriman telah dikirim otomatis ke grup Kurir._"
+                    )
+                    await query.message.edit_text(
+                        text=warehouse_updated_msg,
+                        parse_mode=ParseMode.MARKDOWN
+                    )
+                else:
+                    await query.message.reply_text(
+                        "⚠️ *Grup Kurir belum terdaftar!* Silakan daftarkan grup kurir terlebih dahulu dengan command `/register_kurir` di dalam grup kurir.",
+                        parse_mode=ParseMode.MARKDOWN
+                    )
+            else:
+                await query.message.reply_text("⚠️ Data order tidak ditemukan di sistem.")
+                
+        except Exception as e:
+            logger.error("telegram.wh_done_callback_error", error=str(e))
+            await query.message.reply_text("⚠️ Terjadi kesalahan saat memproses status gudang.")
     elif query.data.startswith("faq_"):
         ans = ""
         if query.data == "faq_return":

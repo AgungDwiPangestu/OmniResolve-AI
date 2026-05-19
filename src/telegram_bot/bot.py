@@ -32,6 +32,8 @@ from src.telegram_bot.handlers import (
     cmd_cancel,
     cmd_faq,
     cmd_human,
+    cmd_register_warehouse,
+    cmd_register_courier,
     handle_text,
     handle_photo,
     handle_callback,
@@ -59,6 +61,12 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("cancel", cmd_cancel))
     app.add_handler(CommandHandler("faq", cmd_faq))
     app.add_handler(CommandHandler("human", cmd_human))
+    
+    # --- Gudang & Kurir Group Registration handlers ---
+    app.add_handler(CommandHandler("register_warehouse", cmd_register_warehouse))
+    app.add_handler(CommandHandler("register_gudang", cmd_register_warehouse))
+    app.add_handler(CommandHandler("register_courier", cmd_register_courier))
+    app.add_handler(CommandHandler("register_kurir", cmd_register_courier))
 
     # --- Message handlers ---
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
