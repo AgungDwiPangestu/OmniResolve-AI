@@ -1,5 +1,5 @@
 -- =============================================================================
--- db/seed.sql — Comprehensive Qhomemart Dummy Data (30 Mapped Sandboxes)
+-- db/seed.sql — Expanded Qhomemart Dummy Data (70 Fully Mapped Sandbox Cases)
 -- =============================================================================
 
 -- Hapus data lama agar aman jika dijalankan berulang
@@ -10,116 +10,236 @@ TRUNCATE TABLE products CASCADE;
 TRUNCATE TABLE customers CASCADE;
 
 -- -----------------------------------------------------------------------------
--- 1. CUSTOMERS (CUST-001 s/d CUST-030)
+-- 1. CUSTOMERS
 -- -----------------------------------------------------------------------------
 INSERT INTO customers (customer_id, customer_name, email, phone, address, is_loyal, lifetime_value_idr, total_orders, previous_complaints) VALUES
-('CUST-001', 'Budi Hartono', 'budi.h@email.com', '081234567890', 'Jl. Kaliurang Km 7, Sleman, Yogyakarta', TRUE, 25000000.00, 12, 1),
-('CUST-002', 'Sari Dewi', 'saridewi99@email.com', '085712345678', 'Jl. Gejayan No. 45, Yogyakarta', FALSE, 1850000.00, 2, 0),
-('CUST-003', 'Kontraktor Jaya Abadi', 'purchasing@jayaabadi.co.id', '0274555666', 'Jl. Magelang Km 10, Sleman', TRUE, 150000000.00, 45, 2),
-('CUST-999', 'Pelanggan Baru', 'newbie@email.com', '081199998888', 'Bantul, Yogyakarta', FALSE, 0.00, 1, 0),
-('CUST-004', 'Agus Setiawan', 'agus.s@email.com', '08122334455', 'Jl. Monjali No. 12, Sleman, Yogyakarta', FALSE, 320000.00, 2, 0),
-('CUST-005', 'Rina Wijaya', 'rina.w@email.com', '08778899001', 'Jl. Godean Km 4, Sleman, Yogyakarta', TRUE, 12500000.00, 8, 1),
-('CUST-006', 'Dian Sasmita', 'dian.s@email.com', '08215566778', 'Jl. Wates Km 2, Bantul, Yogyakarta', FALSE, 240000.00, 2, 0),
-('CUST-007', 'Bambang Triyono', 'bambang.t@email.com', '08139988776', 'Jl. Solo Km 12, Sleman, Yogyakarta', TRUE, 45000000.00, 20, 0),
-('CUST-008', 'Lina Marlina', 'lina.m@email.com', '08997766554', 'Jl. Parangtritis Km 6, Bantul, Yogyakarta', FALSE, 3500000.00, 1, 0),
-('CUST-009', 'Hendra Wijaya', 'hendra.w@email.com', '08123459999', 'Jl. Ringroad Utara No. 12, Depok, Sleman, Yogyakarta', FALSE, 180000.00, 1, 0),
-('CUST-010', 'Dewi Lestari', 'dewi.l@email.com', '0819998877', 'Jl. Kusumanegara No. 88, Umbulharjo, Yogyakarta', TRUE, 195000.00, 1, 0),
-('CUST-011', 'Andi Pratama', 'andi.pratama@email.com', '081211112222', 'Jl. Affandi No. 10, Sleman, Yogyakarta', TRUE, 8500000.00, 5, 0),
-('CUST-012', 'Siti Aminah', 'siti.aminah@email.com', '081322223333', 'Jl. Malioboro No. 25, Yogyakarta', FALSE, 680000.00, 2, 1),
-('CUST-013', 'Joko Susilo', 'joko.s@email.com', '081433334444', 'Jl. Gajah Mada No. 15, Danurejan, Yogyakarta', FALSE, 250000.00, 1, 0),
-('CUST-014', 'Eka Rahmawati', 'eka.rahma@email.com', '081544445555', 'Jl. Katamso No. 40, Mergangsan, Yogyakarta', TRUE, 12000000.00, 7, 0),
-('CUST-015', 'Fajar Nugroho', 'fajar.nugroho@email.com', '081655556666', 'Jl. Kusumanegara No. 5, Yogyakarta', FALSE, 120000.00, 1, 0),
-('CUST-016', 'Gita Permata', 'gita.p@email.com', '081766667777', 'Jl. Jenderal Sudirman No. 50, Yogyakarta', TRUE, 1850000.00, 3, 0),
-('CUST-017', 'Hadi Syahputra', 'hadi.s@email.com', '081877778888', 'Jl. Imogiri Timur Km 5, Bantul, Yogyakarta', FALSE, 3200000.00, 4, 1),
-('CUST-018', 'Indah Lestari', 'indah.l@email.com', '081988889999', 'Jl. Wonosari Km 6, Banguntapan, Bantul', TRUE, 15000000.00, 10, 0),
-('CUST-019', 'Kurniawan Dwi', 'kurniawan.d@email.com', '082199990000', 'Jl. Palagan No. 99, Ngaglik, Sleman', FALSE, 75000.00, 1, 0),
-('CUST-020', 'Lilis Suryani', 'lilis.s@email.com', '082211223344', 'Jl. Kaliurang Km 10, Ngaglik, Sleman', FALSE, 650000.00, 2, 0),
-('CUST-021', 'Mega Utami', 'mega.utami@email.com', '082322334455', 'Jl. Kabupaten No. 8, Sleman, Yogyakarta', TRUE, 5400000.00, 6, 0),
-('CUST-022', 'Novianto Eko', 'novianto.eko@email.com', '082433445566', 'Jl. Magelang Km 6, Sleman, Yogyakarta', FALSE, 85000.00, 1, 0),
-('CUST-023', 'Oki Setiawan', 'oki.setiawan@email.com', '082544556677', 'Jl. Godean Km 7, Sleman, Yogyakarta', FALSE, 35000.00, 1, 0),
-('CUST-024', 'Putri Handayani', 'putri.h@email.com', '082655667788', 'Jl. Bantul Km 4, Dongkelan, Bantul', TRUE, 2200000.00, 3, 0),
-('CUST-025', 'Rian Hidayat', 'rian.h@email.com', '082766778899', 'Jl. Parangtritis Km 4, Sewon, Bantul', FALSE, 195000.00, 1, 0),
-('CUST-026', 'Siska Amelia', 'siska.a@email.com', '082877889900', 'Jl. Tamansiswa No. 120, Yogyakarta', TRUE, 420000.00, 2, 0),
-('CUST-027', 'Taufik Hidayat', 'taufik.h@email.com', '082988990011', 'Jl. HOS Cokroaminoto No. 30, Yogyakarta', FALSE, 60000.00, 1, 0),
-('CUST-028', 'Utami Ningsih', 'utami.n@email.com', '083199001122', 'Jl. Tajem Km 2, Maguwoharjo, Sleman', TRUE, 110000.00, 1, 0),
-('CUST-029', 'Vicky Prasetyo', 'vicky.p@email.com', '083211223344', 'Jl. Glagahsari No. 15, Umbulharjo, Yogyakarta', FALSE, 55000.00, 1, 0),
-('CUST-030', 'Wulan Dari', 'wulan.dari@email.com', '083322334455', 'Jl. C. Simanjuntak No. 10, Terban, Yogyakarta', TRUE, 180000.00, 5, 0);
+('CUST-001', 'Budi Hartono', 'budi.hartono1@email.com', '081272630137', 'Jl. Kaliurang Km 7, Sleman, Yogyakarta', FALSE, 11273982.00, 5, 1),
+('CUST-002', 'Sari Dewi', 'sari.dewi2@email.com', '081278856600', 'Jl. Gejayan No. 45, Yogyakarta', FALSE, 86683054.99, 5, 1),
+('CUST-003', 'Agus Setiawan', 'agus.setiawan3@email.com', '081226740818', 'Jl. Magelang Km 10, Sleman', TRUE, 147299153.08, 11, 2),
+('CUST-004', 'Rina Wijaya', 'rina.wijaya4@email.com', '081297400644', 'Jl. Monjali No. 12, Sleman, Yogyakarta', FALSE, 48238081.86, 43, 2),
+('CUST-005', 'Dian Sasmita', 'dian.sasmita5@email.com', '081224408264', 'Jl. Godean Km 4, Sleman, Yogyakarta', FALSE, 18654789.47, 26, 1),
+('CUST-006', 'Bambang Triyono', 'bambang.triyono6@email.com', '081210744968', 'Jl. Wates Km 2, Bantul, Yogyakarta', TRUE, 44528493.13, 38, 3),
+('CUST-007', 'Lina Marlina', 'lina.marlina7@email.com', '081243335395', 'Jl. Solo Km 12, Sleman, Yogyakarta', FALSE, 48340102.80, 14, 1),
+('CUST-008', 'Hendra Pratama', 'hendra.pratama8@email.com', '081244665530', 'Jl. Parangtritis Km 6, Bantul, Yogyakarta', FALSE, 90523507.93, 33, 2),
+('CUST-009', 'Dewi Aminah', 'dewi.aminah9@email.com', '081281791207', 'Jl. Ringroad Utara No. 12, Depok, Sleman', TRUE, 141064866.08, 44, 0),
+('CUST-010', 'Andi Susilo', 'andi.susilo10@email.com', '081275751708', 'Jl. Kusumanegara No. 88, Umbulharjo, Yogyakarta', FALSE, 64855372.50, 5, 2),
+('CUST-011', 'Siti Rahmawati', 'siti.rahmawati11@email.com', '081273746821', 'Jl. Affandi No. 10, Sleman, Yogyakarta', FALSE, 46276950.82, 32, 3),
+('CUST-012', 'Joko Nugroho', 'joko.nugroho12@email.com', '081280581417', 'Jl. Malioboro No. 25, Yogyakarta', TRUE, 65925594.70, 16, 0),
+('CUST-013', 'Eka Permata', 'eka.permata13@email.com', '081254699539', 'Jl. Gajah Mada No. 15, Danurejan, Yogyakarta', FALSE, 95075238.81, 5, 0),
+('CUST-014', 'Fajar Syahputra', 'fajar.syahputra14@email.com', '081297629946', 'Jl. Katamso No. 40, Mergangsan, Yogyakarta', FALSE, 135016817.28, 37, 1),
+('CUST-015', 'Gita Lestari', 'gita.lestari15@email.com', '081280985262', 'Jl. Kusumanegara No. 5, Yogyakarta', TRUE, 86058084.72, 21, 2),
+('CUST-016', 'Hadi Dwi', 'hadi.dwi16@email.com', '081262529752', 'Jl. Jenderal Sudirman No. 50, Yogyakarta', FALSE, 27820623.81, 17, 2),
+('CUST-017', 'Indah Suryani', 'indah.suryani17@email.com', '081278124310', 'Jl. Imogiri Timur Km 5, Bantul, Yogyakarta', FALSE, 51410732.84, 37, 3),
+('CUST-018', 'Kurniawan Utami', 'kurniawan.utami18@email.com', '081259740850', 'Jl. Wonosari Km 6, Banguntapan, Bantul', TRUE, 49215171.33, 45, 2),
+('CUST-019', 'Lilis Eko', 'lilis.eko19@email.com', '081231459909', 'Jl. Palagan No. 99, Ngaglik, Sleman', FALSE, 56088175.33, 49, 2),
+('CUST-020', 'Mega Setiawan', 'mega.setiawan20@email.com', '081230186245', 'Jl. Kaliurang Km 10, Ngaglik, Sleman', FALSE, 42867826.30, 3, 1),
+('CUST-021', 'Novianto Handayani', 'novianto.handayani21@email.com', '081272628879', 'Jl. Kabupaten No. 8, Sleman, Yogyakarta', TRUE, 110720109.95, 21, 2),
+('CUST-022', 'Oki Hidayat', 'oki.hidayat22@email.com', '081247804766', 'Jl. Magelang Km 6, Sleman, Yogyakarta', FALSE, 122852039.58, 6, 2),
+('CUST-023', 'Putri Amelia', 'putri.amelia23@email.com', '081292609024', 'Jl. Godean Km 7, Sleman, Yogyakarta', FALSE, 39205760.40, 8, 2),
+('CUST-024', 'Rian Hidayat', 'rian.hidayat24@email.com', '081228519074', 'Jl. Bantul Km 4, Dongkelan, Bantul', TRUE, 40606919.21, 9, 3),
+('CUST-025', 'Siska Ningsih', 'siska.ningsih25@email.com', '081225920809', 'Jl. Parangtritis Km 4, Sewon, Bantul', FALSE, 91933054.96, 21, 0),
+('CUST-026', 'Taufik Prasetyo', 'taufik.prasetyo26@email.com', '081261398496', 'Jl. Tamansiswa No. 120, Yogyakarta', FALSE, 90144536.61, 10, 0),
+('CUST-027', 'Utami Dari', 'utami.dari27@email.com', '081225539174', 'Jl. HOS Cokroaminoto No. 30, Yogyakarta', TRUE, 128671352.36, 37, 2),
+('CUST-028', 'Vicky Saputra', 'vicky.saputra28@email.com', '081290115642', 'Jl. Tajem Km 2, Maguwoharjo, Sleman', FALSE, 49856674.41, 24, 3),
+('CUST-029', 'Wulan Wulandari', 'wulan.wulandari29@email.com', '081267193720', 'Jl. Glagahsari No. 15, Umbulharjo, Yogyakarta', FALSE, 25242839.45, 36, 2),
+('CUST-030', 'Yanto Gunawan', 'yanto.gunawan30@email.com', '081247248071', 'Jl. C. Simanjuntak No. 10, Terban, Yogyakarta', TRUE, 123870278.07, 42, 2),
+('CUST-031', 'Zainal Siregar', 'zainal.siregar31@email.com', '081260532492', 'Jl. Kaliurang Km 7, Sleman, Yogyakarta', FALSE, 119129607.90, 22, 1),
+('CUST-032', 'Ahmad Lubis', 'ahmad.lubis32@email.com', '081278953424', 'Jl. Gejayan No. 45, Yogyakarta', FALSE, 73351466.25, 32, 0),
+('CUST-033', 'Bayu Tanjung', 'bayu.tanjung33@email.com', '081254671166', 'Jl. Magelang Km 10, Sleman', TRUE, 35921913.97, 31, 0),
+('CUST-034', 'Citra Nasution', 'citra.nasution34@email.com', '081276180061', 'Jl. Monjali No. 12, Sleman, Yogyakarta', FALSE, 106260218.27, 31, 2),
+('CUST-035', 'Dedi Pane', 'dedi.pane35@email.com', '081229566466', 'Jl. Godean Km 4, Sleman, Yogyakarta', FALSE, 80817531.54, 13, 2),
+('CUST-036', 'Erna Batubara', 'erna.batubara36@email.com', '081217796190', 'Jl. Wates Km 2, Bantul, Yogyakarta', TRUE, 49926198.90, 31, 2),
+('CUST-037', 'Fitri Harahap', 'fitri.harahap37@email.com', '081290149209', 'Jl. Solo Km 12, Sleman, Yogyakarta', FALSE, 128414262.95, 50, 1),
+('CUST-038', 'Guntur Pasaribu', 'guntur.pasaribu38@email.com', '081286401873', 'Jl. Parangtritis Km 6, Bantul, Yogyakarta', FALSE, 127979739.46, 6, 0),
+('CUST-039', 'Hany Pohan', 'hany.pohan39@email.com', '081260127172', 'Jl. Ringroad Utara No. 12, Depok, Sleman', TRUE, 102571846.15, 20, 0),
+('CUST-040', 'Iwan Pulungan', 'iwan.pulungan40@email.com', '081217873139', 'Jl. Kusumanegara No. 88, Umbulharjo, Yogyakarta', FALSE, 95133060.98, 27, 0),
+('CUST-041', 'Julia Hartono', 'julia.hartono41@email.com', '081212895200', 'Jl. Affandi No. 10, Sleman, Yogyakarta', FALSE, 140046911.59, 29, 3),
+('CUST-042', 'Koko Dewi', 'koko.dewi42@email.com', '081281006983', 'Jl. Malioboro No. 25, Yogyakarta', TRUE, 2015661.19, 21, 0),
+('CUST-043', 'Lusi Setiawan', 'lusi.setiawan43@email.com', '081245999206', 'Jl. Gajah Mada No. 15, Danurejan, Yogyakarta', FALSE, 135619953.62, 34, 2),
+('CUST-044', 'Maman Wijaya', 'maman.wijaya44@email.com', '081224648739', 'Jl. Katamso No. 40, Mergangsan, Yogyakarta', FALSE, 60062558.59, 22, 2),
+('CUST-045', 'Nina Sasmita', 'nina.sasmita45@email.com', '081225557517', 'Jl. Kusumanegara No. 5, Yogyakarta', TRUE, 39592294.02, 25, 3),
+('CUST-046', 'Oscar Triyono', 'oscar.triyono46@email.com', '081261164969', 'Jl. Jenderal Sudirman No. 50, Yogyakarta', FALSE, 39376871.36, 15, 3),
+('CUST-047', 'Prima Marlina', 'prima.marlina47@email.com', '081296604901', 'Jl. Imogiri Timur Km 5, Bantul, Yogyakarta', FALSE, 125288072.46, 17, 3),
+('CUST-048', 'Qori Pratama', 'qori.pratama48@email.com', '081238436169', 'Jl. Wonosari Km 6, Banguntapan, Bantul', TRUE, 81017894.92, 32, 2),
+('CUST-049', 'Rudi Aminah', 'rudi.aminah49@email.com', '081249459714', 'Jl. Palagan No. 99, Ngaglik, Sleman', FALSE, 82147520.10, 38, 3),
+('CUST-050', 'Santi Susilo', 'santi.susilo50@email.com', '081215413709', 'Jl. Kaliurang Km 10, Ngaglik, Sleman', FALSE, 49230909.96, 10, 2),
+('CUST-051', 'Teguh Rahmawati', 'teguh.rahmawati51@email.com', '081285841085', 'Jl. Kabupaten No. 8, Sleman, Yogyakarta', TRUE, 95094788.44, 34, 1),
+('CUST-052', 'Ujang Nugroho', 'ujang.nugroho52@email.com', '081219404745', 'Jl. Magelang Km 6, Sleman, Yogyakarta', FALSE, 99636890.41, 12, 3),
+('CUST-053', 'Vina Permata', 'vina.permata53@email.com', '081285791555', 'Jl. Godean Km 7, Sleman, Yogyakarta', FALSE, 141114998.30, 6, 0),
+('CUST-054', 'Wawan Syahputra', 'wawan.syahputra54@email.com', '081261723510', 'Jl. Bantul Km 4, Dongkelan, Bantul', TRUE, 60412800.33, 32, 3),
+('CUST-055', 'Yuni Lestari', 'yuni.lestari55@email.com', '081259895314', 'Jl. Parangtritis Km 4, Sewon, Bantul', FALSE, 135166283.77, 36, 1),
+('CUST-056', 'Zaki Dwi', 'zaki.dwi56@email.com', '081279264052', 'Jl. Tamansiswa No. 120, Yogyakarta', FALSE, 143837862.43, 3, 2),
+('CUST-057', 'Adit Suryani', 'adit.suryani57@email.com', '081261100407', 'Jl. HOS Cokroaminoto No. 30, Yogyakarta', TRUE, 129681614.66, 5, 2),
+('CUST-058', 'Bella Utami', 'bella.utami58@email.com', '081240617202', 'Jl. Tajem Km 2, Maguwoharjo, Sleman', FALSE, 1784863.71, 10, 3),
+('CUST-059', 'Candra Eko', 'candra.eko59@email.com', '081275533576', 'Jl. Glagahsari No. 15, Umbulharjo, Yogyakarta', FALSE, 144082853.60, 19, 1),
+('CUST-060', 'Dina Setiawan', 'dina.setiawan60@email.com', '081294169775', 'Jl. C. Simanjuntak No. 10, Terban, Yogyakarta', TRUE, 119425143.67, 8, 1),
+('CUST-061', 'Edi Handayani', 'edi.handayani61@email.com', '081251785108', 'Jl. Kaliurang Km 7, Sleman, Yogyakarta', FALSE, 59835363.99, 43, 1),
+('CUST-062', 'Fani Hidayat', 'fani.hidayat62@email.com', '081287254170', 'Jl. Gejayan No. 45, Yogyakarta', FALSE, 73877864.04, 49, 2),
+('CUST-063', 'Gilang Amelia', 'gilang.amelia63@email.com', '081277791833', 'Jl. Magelang Km 10, Sleman', TRUE, 82405192.45, 11, 2),
+('CUST-064', 'Hesti Hidayat', 'hesti.hidayat64@email.com', '081231124040', 'Jl. Monjali No. 12, Sleman, Yogyakarta', FALSE, 86179354.58, 20, 0),
+('CUST-065', 'Indra Ningsih', 'indra.ningsih65@email.com', '081233377688', 'Jl. Godean Km 4, Sleman, Yogyakarta', FALSE, 94833896.61, 44, 3),
+('CUST-066', 'Joni Prasetyo', 'joni.prasetyo66@email.com', '081268219541', 'Jl. Wates Km 2, Bantul, Yogyakarta', TRUE, 66698898.17, 2, 0),
+('CUST-067', 'Kiki Dari', 'kiki.dari67@email.com', '081294354904', 'Jl. Solo Km 12, Sleman, Yogyakarta', FALSE, 99981729.46, 33, 3),
+('CUST-068', 'Lia Saputra', 'lia.saputra68@email.com', '081266778468', 'Jl. Parangtritis Km 6, Bantul, Yogyakarta', FALSE, 139916880.83, 40, 2),
+('CUST-069', 'Mita Wulandari', 'mita.wulandari69@email.com', '081240998370', 'Jl. Ringroad Utara No. 12, Depok, Sleman', TRUE, 17793097.09, 37, 1),
+('CUST-070', 'Novi Gunawan', 'novi.gunawan70@email.com', '081247458058', 'Jl. Kusumanegara No. 88, Umbulharjo, Yogyakarta', FALSE, 30396196.12, 38, 1),
+('CUST-999', 'Pelanggan Baru', 'newbie@email.com', '081199998888', 'Bantul, Yogyakarta', FALSE, 0.00, 1, 0);
 
 -- -----------------------------------------------------------------------------
--- 2. PRODUCTS (Katalog Lengkap PRD-001 s/d PRD-030)
+-- 2. PRODUCTS
 -- -----------------------------------------------------------------------------
 INSERT INTO products (product_id, category, product_name, price_idr, stock_available, warehouse_location, warehouse_condition) VALUES
-('PRD-001', 'Bahan Bangunan', 'Granit Lantai Niro Granite 60x60 (Dus)', 250000.00, 50, 'Gudang Utama A1', 'good'),
+('PRD-001', 'Bahan Bangunan', 'Granit Lantai Niro Granite 60x60 (Dus)', 250000.00, 147, 'Gudang Utama A1', 'good'),
 ('PRD-002', 'Bahan Bangunan', 'Semen Instan Mortar Utama (MU-380) 40kg', 85000.00, 0, 'Gudang Material B2', 'depleted'),
-('PRD-003', 'Furnitur', 'Rak Dinding Minimalis Kayu', 150000.00, 12, 'Gudang Furnitur F1', 'good'),
-('PRD-004', 'Sanitary', 'Kloset Duduk Toto Eco Washer Tipe CW421J', 2400000.00, 5, 'Gudang Sanitary D3', 'damaged_in_warehouse'),
-('PRD-005', 'Furnitur', 'Sofa Minimalis L-Shape Fabric (Abu-abu)', 5500000.00, 2, 'Gudang Furnitur F1', 'damaged_in_warehouse'),
-('PRD-006', 'Cat & Perlengkapan', 'Cat Tembok Dulux Catylac Putih 5kg', 160000.00, 25, 'Gudang Cat C1', 'good'),
-('PRD-007', 'Sanitary', 'Keran Air Cabang Stainless', 95000.00, 15, 'Gudang Sanitary D3', 'good'),
-('PRD-008', 'Kelistrikan', 'Lampu LED Philips 12W (Pack isi 4)', 120000.00, 30, 'Gudang Listrik E2', 'good'),
-('PRD-009', 'Sanitary', 'Water Heater Ariston 15L Tipe Andris2 R', 2250000.00, 8, 'Gudang Sanitary D3', 'good'),
-('PRD-010', 'Furnitur', 'Meja Makan Kayu Jati Minimalis', 3500000.00, 3, 'Gudang Furnitur F1', 'good'),
-('PRD-011', 'Kelistrikan', 'Kabel Roll Panasonic 10 Meter', 180000.00, 20, 'Gudang Listrik E2', 'good'),
-('PRD-012', 'Bahan Bangunan', 'Semen Tiga Roda 40kg', 65000.00, 50, 'Gudang Material B2', 'good'),
-('PRD-013', 'Tools', 'Bor Listrik Bosch GSB 550', 680000.00, 10, 'Gudang Perkakas G1', 'good'),
-('PRD-014', 'Peralatan Rumah Tangga', 'Kipas Angin Stand Miyako', 250000.00, 18, 'Gudang Elektronik H2', 'good'),
-('PRD-015', 'Dekorasi', 'Cermin Dinding Hexagonal (Set isi 6)', 120000.00, 40, 'Gudang Dekorasi J3', 'good'),
-('PRD-016', 'Dapur', 'Kitchen Sink Blanco Stainless', 1850000.00, 4, 'Gudang Sanitary D3', 'good'),
-('PRD-017', 'Sanitary', 'Shower Column Set Toto', 3200000.00, 5, 'Gudang Sanitary D3', 'good'),
-('PRD-018', 'Cat & Perlengkapan', 'Kuas Cat Nippon Paint 3 Inch', 150000.00, 100, 'Gudang Cat C1', 'good'),
-('PRD-019', 'Cat & Perlengkapan', 'Cat Kayu & Besi FTALIT 1kg', 75000.00, 30, 'Gudang Cat C1', 'good'),
-('PRD-020', 'Peralatan Rumah Tangga', 'Blender Philips HR2115', 650000.00, 12, 'Gudang Elektronik H2', 'good'),
-('PRD-021', 'Tools', 'Obeng Set Kenmaster 31 in 1', 45000.00, 50, 'Gudang Perkakas G1', 'good'),
-('PRD-022', 'Kelistrikan', 'Stop Kontak Broco 4 Lubang', 85000.00, 60, 'Gudang Listrik E2', 'good'),
-('PRD-023', 'Dekorasi', 'Wallpaper Dinding 3D Foam (Roll)', 35000.00, 80, 'Gudang Dekorasi J3', 'good'),
-('PRD-024', 'Furnitur', 'Lemari Pakaian Plastik Club 4 Susun', 280000.00, 15, 'Gudang Furnitur F1', 'good'),
-('PRD-025', 'Sanitary', 'Jet Shower Closet Toto', 195000.00, 22, 'Gudang Sanitary D3', 'good'),
-('PRD-026', 'Dapur', 'Kompor Gas Rinnai 2 Tungku', 420000.00, 14, 'Gudang Dapur K1', 'good'),
-('PRD-027', 'Lantai', 'Keramik Lantai Mulia 40x40 (Dus)', 60000.00, 100, 'Gudang Utama A1', 'good'),
-('PRD-028', 'Taman', 'Selang Air Anti Tekuk 15 Meter', 110000.00, 25, 'Gudang Taman L2', 'good'),
-('PRD-029', 'Tools', 'Tang Kombinasi Tekiro 7 Inch', 55000.00, 35, 'Gudang Perkakas G1', 'good'),
-('PRD-030', 'Kelistrikan', 'Saklar Lampu Panasonic Single', 18000.00, 150, 'Gudang Listrik E2', 'good');
+('PRD-003', 'Furnitur', 'Rak Dinding Minimalis Kayu', 150000.00, 122, 'Gudang Furnitur F1', 'good'),
+('PRD-004', 'Sanitary', 'Kloset Duduk Toto Eco Washer Tipe CW421J', 2400000.00, 146, 'Gudang Sanitary D3', 'damaged_in_warehouse'),
+('PRD-005', 'Furnitur', 'Sofa Minimalis L-Shape Fabric (Abu-abu)', 5500000.00, 127, 'Gudang Furnitur F1', 'damaged_in_warehouse'),
+('PRD-006', 'Cat & Perlengkapan', 'Cat Tembok Dulux Catylac Putih 5kg', 160000.00, 34, 'Gudang Cat C1', 'good'),
+('PRD-007', 'Sanitary', 'Keran Air Cabang Stainless', 95000.00, 3, 'Gudang Sanitary D3', 'good'),
+('PRD-008', 'Kelistrikan', 'Lampu LED Philips 12W (Pack isi 4)', 120000.00, 125, 'Gudang Listrik E2', 'good'),
+('PRD-009', 'Sanitary', 'Water Heater Ariston 15L Tipe Andris2 R', 2250000.00, 20, 'Gudang Sanitary D3', 'good'),
+('PRD-010', 'Furnitur', 'Meja Makan Kayu Jati Minimalis', 3500000.00, 19, 'Gudang Furnitur F1', 'good'),
+('PRD-011', 'Kelistrikan', 'Kabel Roll Panasonic 10 Meter', 180000.00, 89, 'Gudang Listrik E2', 'good'),
+('PRD-012', 'Bahan Bangunan', 'Semen Tiga Roda 40kg', 65000.00, 114, 'Gudang Material B2', 'good'),
+('PRD-013', 'Tools', 'Bor Listrik Bosch GSB 550', 680000.00, 148, 'Gudang Perkakas G1', 'good'),
+('PRD-014', 'Peralatan Rumah Tangga', 'Kipas Angin Stand Miyako', 250000.00, 64, 'Gudang Elektronik H2', 'good'),
+('PRD-015', 'Dekorasi', 'Cermin Dinding Hexagonal (Set isi 6)', 120000.00, 117, 'Gudang Dekorasi J3', 'good'),
+('PRD-016', 'Dapur', 'Kitchen Sink Blanco Stainless', 1850000.00, 120, 'Gudang Sanitary D3', 'good'),
+('PRD-017', 'Sanitary', 'Shower Column Set Toto', 3200000.00, 92, 'Gudang Sanitary D3', 'good'),
+('PRD-018', 'Cat & Perlengkapan', 'Kuas Cat Nippon Paint 3 Inch', 15000.00, 134, 'Gudang Cat C1', 'good'),
+('PRD-019', 'Cat & Perlengkapan', 'Cat Kayu & Besi FTALIT 1kg', 75000.00, 31, 'Gudang Cat C1', 'good'),
+('PRD-020', 'Peralatan Rumah Tangga', 'Blender Philips HR2115', 650000.00, 21, 'Gudang Elektronik H2', 'good'),
+('PRD-021', 'Tools', 'Obeng Set Kenmaster 31 in 1', 45000.00, 147, 'Gudang Perkakas G1', 'good'),
+('PRD-022', 'Kelistrikan', 'Stop Kontak Broco 4 Lubang', 85000.00, 7, 'Gudang Listrik E2', 'good'),
+('PRD-023', 'Dekorasi', 'Wallpaper Dinding 3D Foam (Roll)', 35000.00, 133, 'Gudang Dekorasi J3', 'good'),
+('PRD-024', 'Furnitur', 'Lemari Pakaian Plastik Club 4 Susun', 280000.00, 66, 'Gudang Furnitur F1', 'good'),
+('PRD-025', 'Sanitary', 'Jet Shower Closet Toto', 195000.00, 90, 'Gudang Sanitary D3', 'good'),
+('PRD-026', 'Dapur', 'Kompor Gas Rinnai 2 Tungku', 420000.00, 112, 'Gudang Dapur K1', 'good'),
+('PRD-027', 'Lantai', 'Keramik Lantai Mulia 40x40 (Dus)', 60000.00, 49, 'Gudang Utama A1', 'good'),
+('PRD-028', 'Taman', 'Selang Air Anti Tekuk 15 Meter', 110000.00, 129, 'Gudang Taman L2', 'good'),
+('PRD-029', 'Tools', 'Tang Kombinasi Tekiro 7 Inch', 55000.00, 31, 'Gudang Perkakas G1', 'good'),
+('PRD-030', 'Kelistrikan', 'Saklar Lampu Panasonic Single', 18000.00, 99, 'Gudang Listrik E2', 'good'),
+('PRD-031', 'Tools', 'Palu Kambing Tekiro 16 oz', 75000.00, 57, 'Gudang Perkakas G1', 'good'),
+('PRD-032', 'Sanitary', 'Wastafel Gantung Toto', 450000.00, 86, 'Gudang Sanitary D3', 'good'),
+('PRD-033', 'Bahan Bangunan', 'Dempul Kayu Isamu 1kg', 45000.00, 86, 'Gudang Cat C1', 'good'),
+('PRD-034', 'Dapur', 'Rice Cooker Miyako 1.8L', 280000.00, 77, 'Gudang Elektronik H2', 'good'),
+('PRD-035', 'Dekorasi', 'Pot Bunga Keramik Putih', 65000.00, 131, 'Gudang Taman L2', 'good'),
+('PRD-036', 'Tools', 'Kunci Inggris Tekiro 10 Inch', 115000.00, 91, 'Gudang Perkakas G1', 'good'),
+('PRD-037', 'Dapur', 'Mixer Cosmos Stand', 350000.00, 49, 'Gudang Elektronik H2', 'good'),
+('PRD-038', 'Rumah Tangga', 'Setrika Listrik Philips Tipe HD1173', 295000.00, 143, 'Gudang Elektronik H2', 'good'),
+('PRD-039', 'Taman', 'Gunting Dahan Tekiro', 85000.00, 108, 'Gudang Taman L2', 'good'),
+('PRD-040', 'Bahan Bangunan', 'Thinner Impala 1 Liter', 35000.00, 9, 'Gudang Cat C1', 'good'),
+('PRD-041', 'Kelistrikan', 'Kabel Antena TV coaxial 15M', 55000.00, 144, 'Gudang Listrik E2', 'good'),
+('PRD-042', 'Furnitur', 'Kursi Kantor Ergonomis', 850000.00, 33, 'Gudang Furnitur F1', 'good'),
+('PRD-043', 'Dapur', 'Teflon Maxim 24cm', 125000.00, 36, 'Gudang Dapur K1', 'good'),
+('PRD-044', 'Dekorasi', 'Gantungan Baju Kayu (Set isi 10)', 48000.00, 24, 'Gudang Dekorasi J3', 'good'),
+('PRD-045', 'Taman', 'Sekop Mini Taman Stainless', 35000.00, 61, 'Gudang Taman L2', 'good'),
+('PRD-046', 'Rumah Tangga', 'Sapu Lantai nilon Kurma', 28000.00, 36, 'Gudang Utama A1', 'good'),
+('PRD-047', 'Sanitary', 'Selang Shower Toto 1.5 Meter', 85000.00, 124, 'Gudang Sanitary D3', 'good'),
+('PRD-048', 'Kelistrikan', 'Bohlam LED Philips 19W', 95000.00, 41, 'Gudang Listrik E2', 'good'),
+('PRD-049', 'Bahan Bangunan', 'Gergaji Kayu Tekiro 18 Inch', 68000.00, 6, 'Gudang Perkakas G1', 'good'),
+('PRD-050', 'Dapur', 'Rak Piring Aluminium 3 Susun', 380000.00, 32, 'Gudang Furnitur F1', 'good'),
+('PRD-051', 'Rumah Tangga', 'Pel Set Alat Pel Spin Mop', 195000.00, 126, 'Gudang Utama A1', 'good'),
+('PRD-052', 'Furnitur', 'Meja Kerja Minimalis', 950000.00, 141, 'Gudang Furnitur F1', 'good'),
+('PRD-053', 'Tools', 'Meteran Tekiro 5 Meter', 40000.00, 60, 'Gudang Perkakas G1', 'good'),
+('PRD-054', 'Kelistrikan', 'Fitting Lampu Panasonic Gantung', 12000.00, 55, 'Gudang Listrik E2', 'good'),
+('PRD-055', 'Sanitary', 'Bak Cuci Piring Stainless Royal', 450000.00, 45, 'Gudang Sanitary D3', 'good'),
+('PRD-056', 'Dekorasi', 'Lukisan Dinding Canvas Modern', 180000.00, 130, 'Gudang Dekorasi J3', 'good'),
+('PRD-057', 'Rumah Tangga', 'Tempat Sampah Injak 10L Plastik', 45000.00, 13, 'Gudang Utama A1', 'good'),
+('PRD-058', 'Bahan Bangunan', 'Paku Kayu 3 Inch (1kg)', 25000.00, 47, 'Gudang Material B2', 'good'),
+('PRD-059', 'Taman', 'Pupuk Organik Cair 1 Liter', 35000.00, 27, 'Gudang Taman L2', 'good'),
+('PRD-060', 'Dapur', 'Dispenser Miyako Hot & Normal', 185000.00, 120, 'Gudang Elektronik H2', 'good'),
+('PRD-061', 'Bahan Bangunan', 'Granit Lantai Niro Granite 60x60 (Dus)', 250000.00, 100, 'Gudang Utama A1', 'good'),
+('PRD-062', 'Bahan Bangunan', 'Semen Instan Mortar Utama (MU-380) 40kg', 85000.00, 121, 'Gudang Material B2', 'depleted'),
+('PRD-063', 'Furnitur', 'Rak Dinding Minimalis Kayu', 150000.00, 21, 'Gudang Furnitur F1', 'good'),
+('PRD-064', 'Sanitary', 'Kloset Duduk Toto Eco Washer Tipe CW421J', 2400000.00, 106, 'Gudang Sanitary D3', 'damaged_in_warehouse'),
+('PRD-065', 'Furnitur', 'Sofa Minimalis L-Shape Fabric (Abu-abu)', 5500000.00, 98, 'Gudang Furnitur F1', 'damaged_in_warehouse'),
+('PRD-066', 'Cat & Perlengkapan', 'Cat Tembok Dulux Catylac Putih 5kg', 160000.00, 147, 'Gudang Cat C1', 'good'),
+('PRD-067', 'Sanitary', 'Keran Air Cabang Stainless', 95000.00, 70, 'Gudang Sanitary D3', 'good'),
+('PRD-068', 'Kelistrikan', 'Lampu LED Philips 12W (Pack isi 4)', 120000.00, 139, 'Gudang Listrik E2', 'good'),
+('PRD-069', 'Sanitary', 'Water Heater Ariston 15L Tipe Andris2 R', 2250000.00, 81, 'Gudang Sanitary D3', 'good'),
+('PRD-070', 'Furnitur', 'Meja Makan Kayu Jati Minimalis', 3500000.00, 79, 'Gudang Furnitur F1', 'good');
 
 -- -----------------------------------------------------------------------------
--- 3. ORDERS (ORD-QHM-001 s/d ORD-QHM-030)
+-- 3. ORDERS
 -- -----------------------------------------------------------------------------
 INSERT INTO orders (order_id, customer_id, order_date, total_amount_idr, status) VALUES
-('ORD-QHM-001', 'CUST-003', NOW() - INTERVAL '5 days', 5000000.00, 'delivered'),
+('ORD-QHM-001', 'CUST-001', NOW() - INTERVAL '10 days', 250000.00, 'delivered'),
 ('ORD-QHM-002', 'CUST-999', NOW() - INTERVAL '1 days', 85000.00, 'pending'),
-('ORD-QHM-003', 'CUST-002', NOW() - INTERVAL '3 days', 150000.00, 'delivered'),
-('ORD-QHM-004', 'CUST-001', NOW() - INTERVAL '4 days', 2400000.00, 'delivered'),
-('ORD-QHM-005', 'CUST-001', NOW() - INTERVAL '2 days', 5500000.00, 'delivered'),
-('ORD-QHM-006', 'CUST-004', NOW() - INTERVAL '2 days', 320000.00, 'delivered'),
-('ORD-QHM-007', 'CUST-005', NOW() - INTERVAL '3 days', 95000.00, 'delivered'),
-('ORD-QHM-008', 'CUST-006', NOW() - INTERVAL '4 days', 240000.00, 'delivered'),
-('ORD-QHM-009', 'CUST-007', NOW() - INTERVAL '1 days', 2250000.00, 'delivered'),
-('ORD-QHM-010', 'CUST-008', NOW() - INTERVAL '3 days', 3500000.00, 'delivered'),
-('ORD-QHM-011', 'CUST-009', NOW() - INTERVAL '1 days', 180000.00, 'delivered'),
-('ORD-QHM-012', 'CUST-010', NOW() - INTERVAL '2 days', 195000.00, 'delivered'),
-('ORD-QHM-013', 'CUST-011', NOW() - INTERVAL '4 days', 680000.00, 'delivered'),
-('ORD-QHM-014', 'CUST-012', NOW() - INTERVAL '2 days', 250000.00, 'delivered'),
-('ORD-QHM-015', 'CUST-013', NOW() - INTERVAL '3 days', 120000.00, 'delivered'),
-('ORD-QHM-016', 'CUST-014', NOW() - INTERVAL '5 days', 1850000.00, 'delivered'),
-('ORD-QHM-017', 'CUST-015', NOW() - INTERVAL '1 days', 3200000.00, 'delivered'),
-('ORD-QHM-018', 'CUST-016', NOW() - INTERVAL '3 days', 150000.00, 'delivered'),
-('ORD-QHM-019', 'CUST-017', NOW() - INTERVAL '4 days', 75000.00, 'delivered'),
-('ORD-QHM-020', 'CUST-018', NOW() - INTERVAL '2 days', 650000.00, 'delivered'),
-('ORD-QHM-021', 'CUST-019', NOW() - INTERVAL '5 days', 45000.00, 'delivered'),
-('ORD-QHM-022', 'CUST-020', NOW() - INTERVAL '1 days', 85000.00, 'delivered'),
-('ORD-QHM-023', 'CUST-021', NOW() - INTERVAL '3 days', 35000.00, 'delivered'),
-('ORD-QHM-024', 'CUST-022', NOW() - INTERVAL '2 days', 280000.00, 'delivered'),
-('ORD-QHM-025', 'CUST-023', NOW() - INTERVAL '4 days', 195000.00, 'delivered'),
-('ORD-QHM-026', 'CUST-024', NOW() - INTERVAL '1 days', 420000.00, 'delivered'),
-('ORD-QHM-027', 'CUST-025', NOW() - INTERVAL '3 days', 60000.00, 'delivered'),
-('ORD-QHM-028', 'CUST-026', NOW() - INTERVAL '4 days', 110000.00, 'delivered'),
-('ORD-QHM-029', 'CUST-027', NOW() - INTERVAL '2 days', 55000.00, 'delivered'),
-('ORD-QHM-030', 'CUST-028', NOW() - INTERVAL '3 days', 18000.00, 'delivered');
+('ORD-QHM-003', 'CUST-003', NOW() - INTERVAL '4 days', 150000.00, 'delivered'),
+('ORD-QHM-004', 'CUST-004', NOW() - INTERVAL '7 days', 2400000.00, 'delivered'),
+('ORD-QHM-005', 'CUST-005', NOW() - INTERVAL '4 days', 5500000.00, 'delivered'),
+('ORD-QHM-006', 'CUST-006', NOW() - INTERVAL '7 days', 320000.00, 'delivered'),
+('ORD-QHM-007', 'CUST-007', NOW() - INTERVAL '5 days', 95000.00, 'delivered'),
+('ORD-QHM-008', 'CUST-008', NOW() - INTERVAL '7 days', 240000.00, 'delivered'),
+('ORD-QHM-009', 'CUST-009', NOW() - INTERVAL '9 days', 2250000.00, 'delivered'),
+('ORD-QHM-010', 'CUST-010', NOW() - INTERVAL '6 days', 3500000.00, 'delivered'),
+('ORD-QHM-011', 'CUST-011', NOW() - INTERVAL '7 days', 180000.00, 'delivered'),
+('ORD-QHM-012', 'CUST-012', NOW() - INTERVAL '2 days', 195000.00, 'delivered'),
+('ORD-QHM-013', 'CUST-013', NOW() - INTERVAL '5 days', 680000.00, 'delivered'),
+('ORD-QHM-014', 'CUST-014', NOW() - INTERVAL '8 days', 250000.00, 'delivered'),
+('ORD-QHM-015', 'CUST-015', NOW() - INTERVAL '4 days', 120000.00, 'delivered'),
+('ORD-QHM-016', 'CUST-016', NOW() - INTERVAL '6 days', 1850000.00, 'delivered'),
+('ORD-QHM-017', 'CUST-017', NOW() - INTERVAL '10 days', 3200000.00, 'delivered'),
+('ORD-QHM-018', 'CUST-018', NOW() - INTERVAL '6 days', 15000.00, 'delivered'),
+('ORD-QHM-019', 'CUST-019', NOW() - INTERVAL '4 days', 75000.00, 'delivered'),
+('ORD-QHM-020', 'CUST-020', NOW() - INTERVAL '9 days', 650000.00, 'delivered'),
+('ORD-QHM-021', 'CUST-021', NOW() - INTERVAL '5 days', 45000.00, 'delivered'),
+('ORD-QHM-022', 'CUST-022', NOW() - INTERVAL '6 days', 85000.00, 'delivered'),
+('ORD-QHM-023', 'CUST-023', NOW() - INTERVAL '5 days', 35000.00, 'delivered'),
+('ORD-QHM-024', 'CUST-024', NOW() - INTERVAL '8 days', 280000.00, 'delivered'),
+('ORD-QHM-025', 'CUST-025', NOW() - INTERVAL '7 days', 195000.00, 'delivered'),
+('ORD-QHM-026', 'CUST-026', NOW() - INTERVAL '5 days', 420000.00, 'delivered'),
+('ORD-QHM-027', 'CUST-027', NOW() - INTERVAL '6 days', 60000.00, 'delivered'),
+('ORD-QHM-028', 'CUST-028', NOW() - INTERVAL '1 days', 110000.00, 'delivered'),
+('ORD-QHM-029', 'CUST-029', NOW() - INTERVAL '9 days', 55000.00, 'delivered'),
+('ORD-QHM-030', 'CUST-030', NOW() - INTERVAL '6 days', 18000.00, 'delivered'),
+('ORD-QHM-031', 'CUST-031', NOW() - INTERVAL '2 days', 75000.00, 'delivered'),
+('ORD-QHM-032', 'CUST-032', NOW() - INTERVAL '1 days', 450000.00, 'delivered'),
+('ORD-QHM-033', 'CUST-033', NOW() - INTERVAL '2 days', 45000.00, 'delivered'),
+('ORD-QHM-034', 'CUST-034', NOW() - INTERVAL '2 days', 280000.00, 'delivered'),
+('ORD-QHM-035', 'CUST-035', NOW() - INTERVAL '9 days', 65000.00, 'delivered'),
+('ORD-QHM-036', 'CUST-036', NOW() - INTERVAL '2 days', 115000.00, 'delivered'),
+('ORD-QHM-037', 'CUST-037', NOW() - INTERVAL '6 days', 350000.00, 'delivered'),
+('ORD-QHM-038', 'CUST-038', NOW() - INTERVAL '1 days', 295000.00, 'delivered'),
+('ORD-QHM-039', 'CUST-039', NOW() - INTERVAL '3 days', 85000.00, 'delivered'),
+('ORD-QHM-040', 'CUST-040', NOW() - INTERVAL '9 days', 35000.00, 'delivered'),
+('ORD-QHM-041', 'CUST-041', NOW() - INTERVAL '1 days', 55000.00, 'delivered'),
+('ORD-QHM-042', 'CUST-042', NOW() - INTERVAL '2 days', 850000.00, 'delivered'),
+('ORD-QHM-043', 'CUST-043', NOW() - INTERVAL '9 days', 125000.00, 'delivered'),
+('ORD-QHM-044', 'CUST-044', NOW() - INTERVAL '1 days', 48000.00, 'delivered'),
+('ORD-QHM-045', 'CUST-045', NOW() - INTERVAL '1 days', 35000.00, 'delivered'),
+('ORD-QHM-046', 'CUST-046', NOW() - INTERVAL '5 days', 28000.00, 'delivered'),
+('ORD-QHM-047', 'CUST-047', NOW() - INTERVAL '9 days', 85000.00, 'delivered'),
+('ORD-QHM-048', 'CUST-048', NOW() - INTERVAL '9 days', 95000.00, 'delivered'),
+('ORD-QHM-049', 'CUST-049', NOW() - INTERVAL '6 days', 68000.00, 'delivered'),
+('ORD-QHM-050', 'CUST-050', NOW() - INTERVAL '9 days', 380000.00, 'delivered'),
+('ORD-QHM-051', 'CUST-051', NOW() - INTERVAL '3 days', 195000.00, 'delivered'),
+('ORD-QHM-052', 'CUST-052', NOW() - INTERVAL '10 days', 950000.00, 'delivered'),
+('ORD-QHM-053', 'CUST-053', NOW() - INTERVAL '10 days', 40000.00, 'delivered'),
+('ORD-QHM-054', 'CUST-054', NOW() - INTERVAL '2 days', 12000.00, 'delivered'),
+('ORD-QHM-055', 'CUST-055', NOW() - INTERVAL '8 days', 450000.00, 'delivered'),
+('ORD-QHM-056', 'CUST-056', NOW() - INTERVAL '4 days', 180000.00, 'delivered'),
+('ORD-QHM-057', 'CUST-057', NOW() - INTERVAL '3 days', 45000.00, 'delivered'),
+('ORD-QHM-058', 'CUST-058', NOW() - INTERVAL '5 days', 25000.00, 'delivered'),
+('ORD-QHM-059', 'CUST-059', NOW() - INTERVAL '8 days', 35000.00, 'delivered'),
+('ORD-QHM-060', 'CUST-060', NOW() - INTERVAL '8 days', 185000.00, 'delivered'),
+('ORD-QHM-061', 'CUST-061', NOW() - INTERVAL '7 days', 250000.00, 'delivered'),
+('ORD-QHM-062', 'CUST-062', NOW() - INTERVAL '5 days', 85000.00, 'delivered'),
+('ORD-QHM-063', 'CUST-063', NOW() - INTERVAL '1 days', 150000.00, 'delivered'),
+('ORD-QHM-064', 'CUST-064', NOW() - INTERVAL '6 days', 2400000.00, 'delivered'),
+('ORD-QHM-065', 'CUST-065', NOW() - INTERVAL '10 days', 5500000.00, 'delivered'),
+('ORD-QHM-066', 'CUST-066', NOW() - INTERVAL '5 days', 160000.00, 'delivered'),
+('ORD-QHM-067', 'CUST-067', NOW() - INTERVAL '1 days', 95000.00, 'delivered'),
+('ORD-QHM-068', 'CUST-068', NOW() - INTERVAL '7 days', 120000.00, 'delivered'),
+('ORD-QHM-069', 'CUST-069', NOW() - INTERVAL '1 days', 2250000.00, 'delivered'),
+('ORD-QHM-070', 'CUST-070', NOW() - INTERVAL '4 days', 3500000.00, 'delivered');
 
 -- -----------------------------------------------------------------------------
 -- 4. ORDER ITEMS
 -- -----------------------------------------------------------------------------
 INSERT INTO order_items (order_id, product_id, quantity, subtotal_idr) VALUES
-('ORD-QHM-001', 'PRD-001', 20, 5000000.00),
+('ORD-QHM-001', 'PRD-001', 1, 250000.00),
 ('ORD-QHM-002', 'PRD-002', 1, 85000.00),
 ('ORD-QHM-003', 'PRD-003', 1, 150000.00),
 ('ORD-QHM-004', 'PRD-004', 1, 2400000.00),
@@ -136,7 +256,7 @@ INSERT INTO order_items (order_id, product_id, quantity, subtotal_idr) VALUES
 ('ORD-QHM-015', 'PRD-015', 1, 120000.00),
 ('ORD-QHM-016', 'PRD-016', 1, 1850000.00),
 ('ORD-QHM-017', 'PRD-017', 1, 3200000.00),
-('ORD-QHM-018', 'PRD-018', 1, 150000.00),
+('ORD-QHM-018', 'PRD-018', 1, 15000.00),
 ('ORD-QHM-019', 'PRD-019', 1, 75000.00),
 ('ORD-QHM-020', 'PRD-020', 1, 650000.00),
 ('ORD-QHM-021', 'PRD-021', 1, 45000.00),
@@ -148,244 +268,122 @@ INSERT INTO order_items (order_id, product_id, quantity, subtotal_idr) VALUES
 ('ORD-QHM-027', 'PRD-027', 1, 60000.00),
 ('ORD-QHM-028', 'PRD-028', 1, 110000.00),
 ('ORD-QHM-029', 'PRD-029', 1, 55000.00),
-('ORD-QHM-030', 'PRD-030', 1, 18000.00);
+('ORD-QHM-030', 'PRD-030', 1, 18000.00),
+('ORD-QHM-031', 'PRD-031', 1, 75000.00),
+('ORD-QHM-032', 'PRD-032', 1, 450000.00),
+('ORD-QHM-033', 'PRD-033', 1, 45000.00),
+('ORD-QHM-034', 'PRD-034', 1, 280000.00),
+('ORD-QHM-035', 'PRD-035', 1, 65000.00),
+('ORD-QHM-036', 'PRD-036', 1, 115000.00),
+('ORD-QHM-037', 'PRD-037', 1, 350000.00),
+('ORD-QHM-038', 'PRD-038', 1, 295000.00),
+('ORD-QHM-039', 'PRD-039', 1, 85000.00),
+('ORD-QHM-040', 'PRD-040', 1, 35000.00),
+('ORD-QHM-041', 'PRD-041', 1, 55000.00),
+('ORD-QHM-042', 'PRD-042', 1, 850000.00),
+('ORD-QHM-043', 'PRD-043', 1, 125000.00),
+('ORD-QHM-044', 'PRD-044', 1, 48000.00),
+('ORD-QHM-045', 'PRD-045', 1, 35000.00),
+('ORD-QHM-046', 'PRD-046', 1, 28000.00),
+('ORD-QHM-047', 'PRD-047', 1, 85000.00),
+('ORD-QHM-048', 'PRD-048', 1, 95000.00),
+('ORD-QHM-049', 'PRD-049', 1, 68000.00),
+('ORD-QHM-050', 'PRD-050', 1, 380000.00),
+('ORD-QHM-051', 'PRD-051', 1, 195000.00),
+('ORD-QHM-052', 'PRD-052', 1, 950000.00),
+('ORD-QHM-053', 'PRD-053', 1, 40000.00),
+('ORD-QHM-054', 'PRD-054', 1, 12000.00),
+('ORD-QHM-055', 'PRD-055', 1, 450000.00),
+('ORD-QHM-056', 'PRD-056', 1, 180000.00),
+('ORD-QHM-057', 'PRD-057', 1, 45000.00),
+('ORD-QHM-058', 'PRD-058', 1, 25000.00),
+('ORD-QHM-059', 'PRD-059', 1, 35000.00),
+('ORD-QHM-060', 'PRD-060', 1, 185000.00),
+('ORD-QHM-061', 'PRD-061', 1, 250000.00),
+('ORD-QHM-062', 'PRD-062', 1, 85000.00),
+('ORD-QHM-063', 'PRD-063', 1, 150000.00),
+('ORD-QHM-064', 'PRD-064', 1, 2400000.00),
+('ORD-QHM-065', 'PRD-065', 1, 5500000.00),
+('ORD-QHM-066', 'PRD-066', 1, 160000.00),
+('ORD-QHM-067', 'PRD-067', 1, 95000.00),
+('ORD-QHM-068', 'PRD-068', 1, 120000.00),
+('ORD-QHM-069', 'PRD-069', 1, 2250000.00),
+('ORD-QHM-070', 'PRD-070', 1, 3500000.00);
 
 -- -----------------------------------------------------------------------------
--- 5. DELIVERIES (Logistik Kurir / Mapped Sandboxes)
+-- 5. DELIVERIES (Logistik Kurir / 70 Mapped Sandboxes)
 -- -----------------------------------------------------------------------------
 INSERT INTO deliveries (tracking_id, order_id, courier_name, status, condition_on_pickup, damage_reported_by_courier, delivery_logs) VALUES
--- 1. Valid Damage (Granit)
-(
-    'QHM-DEL-0011234', 'ORD-QHM-001', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-14 08:00", "status": "Barang dimuat ke armada internal", "location": "Yogyakarta"},
-        {"time": "2026-05-14 11:30", "status": "Terkirim — guncangan keras di jalan berlubang, tumpukan granit retak", "location": "Sleman"}
-    ]'::jsonb
-),
--- 2. Pending (Stock-Out Semen Instan)
-(
-    'QHM-DEL-0022234', 'ORD-QHM-002', 'Armada Qhomemart', 'pending', 'intact', FALSE,
-    '[
-        {"time": "2026-05-20 08:00", "status": "Ditunda — menunggu restock pabrik", "location": "Gudang B2"}
-    ]'::jsonb
-),
--- 3. Valid Damage (Rak Kayu)
-(
-    'QHM-DEL-8821345', 'ORD-QHM-003', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-12 08:00", "status": "Barang diambil dari Gudang Qhomemart Jogja", "location": "Yogyakarta"},
-        {"time": "2026-05-12 10:30", "status": "Dalam perjalanan — tergelincir guncangan parah", "location": "Sleman"},
-        {"time": "2026-05-12 16:45", "status": "Terkirim — terdeteksi benturan parah pada packing kayu", "location": "Sleman"}
-    ]'::jsonb
-),
--- 4. Valid Damage (Kloset Toto)
-(
-    'CARGO-5590234', 'ORD-QHM-004', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-09 09:00", "status": "Paket diambil dari Gudang Qhomemart", "location": "Yogyakarta"},
-        {"time": "2026-05-10 20:15", "status": "Hub transit kargo — indikasi benturan ringan", "location": "Semarang"},
-        {"time": "2026-05-11 14:20", "status": "Terkirim — ada laporan packing kayu sedikit rusak", "location": "Magelang"}
-    ]'::jsonb
-),
--- 5. Valid Damage (Sofa L-Shape)
-(
-    'QHM-DEL-9993331', 'ORD-QHM-005', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-13 08:00", "status": "Barang dimuat ke pickup Qhomemart", "location": "Yogyakarta"},
-        {"time": "2026-05-13 09:30", "status": "Terkena hujan lebat di perjalanan, terpal bocor", "location": "Bantul"},
-        {"time": "2026-05-13 10:00", "status": "Terkirim — catatan: basah/kotor", "location": "Bantul"}
-    ]'::jsonb
-),
--- 6. Valid Damage (Cat Tembok)
-(
-    'QHM-DEL-0061234', 'ORD-QHM-006', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-17 08:00", "status": "Barang diambil dari Gudang Cat", "location": "Yogyakarta"},
-        {"time": "2026-05-17 11:15", "status": "Terkirim — kaleng penyok dan rembes cat keluar", "location": "Sleman"}
-    ]'::jsonb
-),
--- 7. Valid Damage (Keran Air Cabang)
-(
-    'JNT-7721345', 'ORD-QHM-007', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-16 09:00", "status": "Paket masuk drop point J&T", "location": "Yogyakarta"},
-        {"time": "2026-05-17 14:30", "status": "Terkirim — pecah sebagian", "location": "Sleman"}
-    ]'::jsonb
-),
--- 8. Valid Damage (Lampu LED)
-(
-    'SCE-8812341', 'ORD-QHM-008', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-15 10:00", "status": "Paket diserahkan ke kurir", "location": "Yogyakarta"},
-        {"time": "2026-05-15 16:30", "status": "Diterima — box penyok basah terkena benturan cargo", "location": "Bantul"}
-    ]'::jsonb
-),
--- 9. Valid Damage (Water Heater)
-(
-    'JNE-9902341', 'ORD-QHM-009', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-18 08:30", "status": "Barang diserahkan ke cargo", "location": "Yogyakarta"},
-        {"time": "2026-05-18 17:45", "status": "Terkirim — casing retak retak", "location": "Sleman"}
-    ]'::jsonb
-),
--- 10. Clean Delivery (Meja Makan - No Damage, Fraud Check!)
-(
-    'QHM-DEL-010331', 'ORD-QHM-010', 'Armada Qhomemart', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-16 09:00", "status": "Meja dimuat ke armada internal", "location": "Yogyakarta"},
-        {"time": "2026-05-16 12:00", "status": "Tiba di lokasi penerima", "location": "Bantul"}
-    ]'::jsonb
-),
--- 11. Valid Damage (Kabel Roll)
-(
-    'QHM-DEL-011777', 'ORD-QHM-011', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-20 09:00", "status": "Barang diserahkan ke armada", "location": "Yogyakarta"},
-        {"time": "2026-05-20 14:00", "status": "Terkirim — tergilas roda kendaraan di jalan", "location": "Sleman"}
-    ]'::jsonb
-),
--- 12. Valid Damage (Semen Tiga Roda)
-(
-    'QHM-DEL-012888', 'ORD-QHM-012', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-19 10:00", "status": "Paket masuk drop point kargo", "location": "Yogyakarta"},
-        {"time": "2026-05-19 16:30", "status": "Terkirim — kantong semen sobek parah terkena hujan", "location": "Yogyakarta"}
-    ]'::jsonb
-),
--- 13. Valid Damage (Bor Bosch)
-(
-    'QHM-DEL-013111', 'ORD-QHM-013', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-18 10:00", "status": "Paket masuk Hub", "location": "Yogyakarta"},
-        {"time": "2026-05-18 15:45", "status": "Terkirim — box plastik retak parah", "location": "Sleman"}
-    ]'::jsonb
-),
--- 14. Valid Damage (Kipas Miyako)
-(
-    'QHM-DEL-014222', 'ORD-QHM-014', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-19 09:00", "status": "Kurir membawa paket", "location": "Yogyakarta"},
-        {"time": "2026-05-19 14:00", "status": "Terkirim — leher kipas patah akibat guncangan", "location": "Yogyakarta"}
-    ]'::jsonb
-),
--- 15. Valid Damage (Cermin Dinding)
-(
-    'QHM-DEL-015333', 'ORD-QHM-015', 'GrabExpress', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-20 11:00", "status": "Driver pickup barang", "location": "Yogyakarta"},
-        {"time": "2026-05-20 12:15", "status": "Tiba di tujuan — kaca cermin pecah 2 biji", "location": "Yogyakarta"}
-    ]'::jsonb
-),
--- 16. Valid Damage (Kitchen Sink Blanco)
-(
-    'QHM-DEL-016444', 'ORD-QHM-016', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-17 08:00", "status": "Diserahkan ke cargo", "location": "Yogyakarta"},
-        {"time": "2026-05-18 16:30", "status": "Terkirim — stainless penyok pojok kiri", "location": "Sleman"}
-    ]'::jsonb
-),
--- 17. Valid Damage (Shower Set Toto)
-(
-    'QHM-DEL-017555', 'ORD-QHM-017', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-20 08:30", "status": "Loading ke truk armada", "location": "Yogyakarta"},
-        {"time": "2026-05-20 11:45", "status": "Terkirim — hand shower retak bagian drat", "location": "Sleman"}
-    ]'::jsonb
-),
--- 18. Clean Delivery (Kuas Nippon - No Damage)
-(
-    'QHM-DEL-018666', 'ORD-QHM-018', 'GoSend', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-19 13:00", "status": "Tiba di lokasi penerima", "location": "Yogyakarta"}
-    ]'::jsonb
-),
--- 19. Valid Damage (Cat FTALIT)
-(
-    'QHM-DEL-019777', 'ORD-QHM-019', 'GrabExpress', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-18 10:00", "status": "Terkirim — kaleng bocor rembes", "location": "Bantul"}
-    ]'::jsonb
-),
--- 20. Valid Damage (Blender Philips)
-(
-    'QHM-DEL-020888', 'ORD-QHM-020', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-19 09:00", "status": "Diserahkan ke kurir", "location": "Yogyakarta"},
-        {"time": "2026-05-19 15:30", "status": "Terkirim — gelas kaca blender pecah seribu", "location": "Bantul"}
-    ]'::jsonb
-),
--- 21. Clean Delivery (Obeng Set - No Damage)
-(
-    'QHM-DEL-021999', 'ORD-QHM-021', 'SiCepat', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-16 11:00", "status": "Terkirim", "location": "Ngaglik"}
-    ]'::jsonb
-),
--- 22. Clean Delivery (Stop Kontak Broco - No Damage)
-(
-    'QHM-DEL-022000', 'ORD-QHM-022', 'GoSend', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-20 14:00", "status": "Terkirim", "location": "Ngaglik"}
-    ]'::jsonb
-),
--- 23. Valid Damage (Wallpaper Dinding)
-(
-    'QHM-DEL-023111', 'ORD-QHM-023', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-18 09:00", "status": "Terkirim — roll wallpaper sobek tergores tajam", "location": "Sleman"}
-    ]'::jsonb
-),
--- 24. Valid Damage (Lemari Plastik)
-(
-    'QHM-DEL-024222', 'ORD-QHM-024', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-19 08:30", "status": "Dalam perjalanan", "location": "Yogyakarta"},
-        {"time": "2026-05-19 12:00", "status": "Terkirim — panel pintu plastik retak 1 lembar", "location": "Sleman"}
-    ]'::jsonb
-),
--- 25. Clean Delivery (Jet Shower Toto - No Damage)
-(
-    'QHM-DEL-025333', 'ORD-QHM-025', 'GrabExpress', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-17 11:30", "status": "Terkirim", "location": "Sewon"}
-    ]'::jsonb
-),
--- 26. Valid Damage (Kompor Rinnai)
-(
-    'QHM-DEL-026444', 'ORD-QHM-026', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-20 09:00", "status": "Proses kirim", "location": "Yogyakarta"},
-        {"time": "2026-05-20 11:15", "status": "Terkirim — kaca burner penyok & tungku goyang", "location": "Sewon"}
-    ]'::jsonb
-),
--- 27. Clean Delivery (Keramik Mulia - No Damage)
-(
-    'QHM-DEL-027555', 'ORD-QHM-027', 'Dakota Cargo', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-18 10:00", "status": "Terkirim", "location": "Sewon"}
-    ]'::jsonb
-),
--- 28. Valid Damage (Selang Air 15M)
-(
-    'QHM-DEL-028666', 'ORD-QHM-028', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE,
-    '[
-        {"time": "2026-05-17 10:00", "status": "Terkirim — selang tergores/bocor tertusuk paku cargo", "location": "Sewon"}
-    ]'::jsonb
-),
--- 29. Clean Delivery (Tang Tekiro - No Damage)
-(
-    'QHM-DEL-029777', 'ORD-QHM-029', 'GoSend', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-19 15:00", "status": "Terkirim", "location": "Sewon"}
-    ]'::jsonb
-),
--- 30. Clean Delivery (Saklar Panasonic - No Damage)
-(
-    'QHM-DEL-030888', 'ORD-QHM-030', 'GoSend', 'delivered', 'intact', FALSE,
-    '[
-        {"time": "2026-05-18 12:00", "status": "Terkirim", "location": "Terban"}
-    ]'::jsonb
-);
+('QHM-DEL-0018432', 'ORD-QHM-001', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0022234', 'ORD-QHM-002', 'Dakota Cargo', 'pending', 'intact', FALSE, '[{"time": "2026-05-20 08:00", "status": "Ditunda — menunggu restock pabrik", "location": "Gudang B2"}]'::jsonb),
+('QHM-DEL-0031105', 'ORD-QHM-003', 'J&T Express', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0047825', 'ORD-QHM-004', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0052762', 'ORD-QHM-005', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0068314', 'ORD-QHM-006', 'GoSend', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0076081', 'ORD-QHM-007', 'GrabExpress', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0081182', 'ORD-QHM-008', 'Indah Logistik', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0091715', 'ORD-QHM-009', 'Armada Qhomemart', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0108674', 'ORD-QHM-010', 'Dakota Cargo', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0117804', 'ORD-QHM-011', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0124920', 'ORD-QHM-012', 'SiCepat', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0134977', 'ORD-QHM-013', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0143501', 'ORD-QHM-014', 'GoSend', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0157770', 'ORD-QHM-015', 'GrabExpress', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0164931', 'ORD-QHM-016', 'Indah Logistik', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0178451', 'ORD-QHM-017', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0187074', 'ORD-QHM-018', 'Dakota Cargo', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0195245', 'ORD-QHM-019', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0203408', 'ORD-QHM-020', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0213831', 'ORD-QHM-021', 'JNE Trucking', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0229986', 'ORD-QHM-022', 'GoSend', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0232661', 'ORD-QHM-023', 'GrabExpress', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0246981', 'ORD-QHM-024', 'Indah Logistik', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0255278', 'ORD-QHM-025', 'Armada Qhomemart', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0264371', 'ORD-QHM-026', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0273842', 'ORD-QHM-027', 'J&T Express', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0284900', 'ORD-QHM-028', 'SiCepat', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0298129', 'ORD-QHM-029', 'JNE Trucking', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0309151', 'ORD-QHM-030', 'GoSend', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 13:00", "status": "Terkirim bersih, packing mulus", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0315481', 'ORD-QHM-031', 'GrabExpress', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0322305', 'ORD-QHM-032', 'Indah Logistik', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0331908', 'ORD-QHM-033', 'Armada Qhomemart', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0346969', 'ORD-QHM-034', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0351458', 'ORD-QHM-035', 'J&T Express', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0362349', 'ORD-QHM-036', 'SiCepat', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0375017', 'ORD-QHM-037', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0383013', 'ORD-QHM-038', 'GoSend', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0397136', 'ORD-QHM-039', 'GrabExpress', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0405304', 'ORD-QHM-040', 'Indah Logistik', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0416177', 'ORD-QHM-041', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0424349', 'ORD-QHM-042', 'Dakota Cargo', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0439400', 'ORD-QHM-043', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0448570', 'ORD-QHM-044', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0454449', 'ORD-QHM-045', 'JNE Trucking', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0469600', 'ORD-QHM-046', 'GoSend', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0477014', 'ORD-QHM-047', 'GrabExpress', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0481483', 'ORD-QHM-048', 'Indah Logistik', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0493504', 'ORD-QHM-049', 'Armada Qhomemart', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0506079', 'ORD-QHM-050', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0516220', 'ORD-QHM-051', 'J&T Express', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0523345', 'ORD-QHM-052', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0538217', 'ORD-QHM-053', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0542310', 'ORD-QHM-054', 'GoSend', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0555398', 'ORD-QHM-055', 'GrabExpress', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0561307', 'ORD-QHM-056', 'Indah Logistik', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0576577', 'ORD-QHM-057', 'Armada Qhomemart', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0588489', 'ORD-QHM-058', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0594025', 'ORD-QHM-059', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0603866', 'ORD-QHM-060', 'SiCepat', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0618514', 'ORD-QHM-061', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0624584', 'ORD-QHM-062', 'GoSend', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0632681', 'ORD-QHM-063', 'GrabExpress', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0649878', 'ORD-QHM-064', 'Indah Logistik', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0651490', 'ORD-QHM-065', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0661572', 'ORD-QHM-066', 'Dakota Cargo', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0674333', 'ORD-QHM-067', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0687296', 'ORD-QHM-068', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-19 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-19 14:30", "status": "Terkirim — terdeteksi benturan parah/kerusakan fisik oleh kurir", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0699245', 'ORD-QHM-069', 'JNE Trucking', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0708622', 'ORD-QHM-070', 'GoSend', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb);
 
 -- -----------------------------------------------------------------------------
 -- 6. COMPLAINT SESSIONS (Histori Komplain Demo)
