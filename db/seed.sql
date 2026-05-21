@@ -21,7 +21,9 @@ INSERT INTO customers (customer_id, customer_name, email, phone, address, is_loy
 ('CUST-005', 'Rina Wijaya', 'rina.w@email.com', '08778899001', 'Jl. Godean Km 4, Sleman, Yogyakarta', TRUE, 12500000.00, 8, 1),
 ('CUST-006', 'Dian Sasmita', 'dian.s@email.com', '08215566778', 'Jl. Wates Km 2, Bantul, Yogyakarta', FALSE, 240000.00, 2, 0),
 ('CUST-007', 'Bambang Triyono', 'bambang.t@email.com', '08139988776', 'Jl. Solo Km 12, Sleman, Yogyakarta', TRUE, 45000000.00, 20, 0),
-('CUST-008', 'Lina Marlina', 'lina.m@email.com', '08997766554', 'Jl. Parangtritis Km 6, Bantul, Yogyakarta', FALSE, 3500000.00, 1, 0);
+('CUST-008', 'Lina Marlina', 'lina.m@email.com', '08997766554', 'Jl. Parangtritis Km 6, Bantul, Yogyakarta', FALSE, 3500000.00, 1, 0),
+('CUST-011', 'Hendra Wijaya', 'hendra.w@email.com', '08123459999', 'Jl. Ringroad Utara No. 12, Depok, Sleman, Yogyakarta', FALSE, 180000.00, 1, 0),
+('CUST-012', 'Dewi Lestari', 'dewi.l@email.com', '0819998877', 'Jl. Kusumanegara No. 88, Umbulharjo, Yogyakarta', TRUE, 195000.00, 1, 0);
 
 -- -----------------------------------------------------------------------------
 -- 2. PRODUCTS (Katalog Qhomemart)
@@ -30,13 +32,15 @@ INSERT INTO products (product_id, category, product_name, price_idr, stock_avail
 ('PRD-001', 'Bahan Bangunan', 'Granit Lantai Niro Granite 60x60 (Dus)', 250000.00, 50, 'Gudang Utama A1', 'good'),
 ('PRD-002', 'Bahan Bangunan', 'Semen Instan Mortar Utama (MU-380) 40kg', 85000.00, 0, 'Gudang Material B2', 'depleted'),
 ('PRD-003', 'Furnitur', 'Rak Dinding Minimalis Kayu', 150000.00, 12, 'Gudang Furnitur F1', 'good'),
-('PRD-004', 'Sanitary', 'Kloset Duduk Toto Eco Washer Tipe CW421J', 2400000.00, 5, 'Gudang Sanitary D3', 'damaged_in_warehouse'),
+('PRD-004', 'Sanitary', 'Kloset Duduk Toto Eco Washer Tipe CW421J', 240000.00, 5, 'Gudang Sanitary D3', 'damaged_in_warehouse'),
 ('PRD-005', 'Furnitur', 'Sofa Minimalis L-Shape Fabric (Abu-abu)', 5500000.00, 2, 'Gudang Furnitur F1', 'damaged_in_warehouse'),
 ('PRD-006', 'Cat & Perlengkapan', 'Cat Tembok Dulux Catylac Putih 5kg', 160000.00, 25, 'Gudang Cat C1', 'good'),
 ('PRD-007', 'Sanitary', 'Keran Air Cabang Stainless', 95000.00, 15, 'Gudang Sanitary D3', 'good'),
 ('PRD-008', 'Kelistrikan', 'Lampu LED Philips 12W (Pack isi 4)', 120000.00, 30, 'Gudang Listrik E2', 'good'),
 ('PRD-009', 'Sanitary', 'Water Heater Ariston 15L Tipe Andris2 R', 2250000.00, 8, 'Gudang Sanitary D3', 'good'),
-('PRD-010', 'Furnitur', 'Meja Makan Kayu Jati Minimalis', 3500000.00, 3, 'Gudang Furnitur F1', 'good');
+('PRD-010', 'Furnitur', 'Meja Makan Kayu Jati Minimalis', 3500000.00, 3, 'Gudang Furnitur F1', 'good'),
+('PRD-011', 'Kelistrikan', 'Kabel Roll Panasonic 10 Meter', 180000.00, 20, 'Gudang Listrik E2', 'good'),
+('PRD-012', 'Bahan Bangunan', 'Semen Tiga Roda 40kg', 65000.00, 50, 'Gudang Material B2', 'good');
 
 -- -----------------------------------------------------------------------------
 -- 3. ORDERS
@@ -51,7 +55,9 @@ INSERT INTO orders (order_id, customer_id, order_date, total_amount_idr, status)
 ('ORD-QHM-007', 'CUST-005', NOW() - INTERVAL '3 days', 95000.00, 'delivered'),
 ('ORD-QHM-008', 'CUST-006', NOW() - INTERVAL '4 days', 240000.00, 'delivered'),
 ('ORD-QHM-009', 'CUST-007', NOW() - INTERVAL '1 days', 2250000.00, 'delivered'),
-('ORD-QHM-010', 'CUST-008', NOW() - INTERVAL '3 days', 3500000.00, 'delivered');
+('ORD-QHM-010', 'CUST-008', NOW() - INTERVAL '3 days', 3500000.00, 'delivered'),
+('ORD-QHM-011', 'CUST-011', NOW() - INTERVAL '1 days', 180000.00, 'delivered'),
+('ORD-QHM-012', 'CUST-012', NOW() - INTERVAL '2 days', 195000.00, 'delivered');
 
 -- -----------------------------------------------------------------------------
 -- 4. ORDER ITEMS
@@ -66,7 +72,9 @@ INSERT INTO order_items (order_id, product_id, quantity, subtotal_idr) VALUES
 ('ORD-QHM-007', 'PRD-007', 1, 95000.00),
 ('ORD-QHM-008', 'PRD-008', 2, 240000.00),
 ('ORD-QHM-009', 'PRD-009', 1, 2250000.00),
-('ORD-QHM-010', 'PRD-010', 1, 3500000.00);
+('ORD-QHM-010', 'PRD-010', 1, 3500000.00),
+('ORD-QHM-011', 'PRD-011', 1, 180000.00),
+('ORD-QHM-012', 'PRD-012', 3, 195000.00);
 
 -- -----------------------------------------------------------------------------
 -- 5. DELIVERIES (Logistik Kurir / Armada)
@@ -136,6 +144,20 @@ INSERT INTO deliveries (tracking_id, order_id, courier_name, status, condition_o
     '[
         {"time": "2026-05-16 09:00", "status": "Meja dimuat ke armada internal", "location": "Yogyakarta"},
         {"time": "2026-05-16 12:00", "status": "Tiba di lokasi penerima", "location": "Bantul"}
+    ]'::jsonb
+),
+(
+    'QHM-DEL-011777', 'ORD-QHM-011', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE,
+    '[
+        {"time": "2026-05-20 09:00", "status": "Barang diserahkan ke armada", "location": "Yogyakarta"},
+        {"time": "2026-05-20 14:00", "status": "Terkirim — tergilas roda kendaraan di jalan", "location": "Sleman"}
+    ]'::jsonb
+),
+(
+    'QHM-DEL-012888', 'ORD-QHM-012', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE,
+    '[
+        {"time": "2026-05-19 10:00", "status": "Paket masuk drop point kargo", "location": "Yogyakarta"},
+        {"time": "2026-05-19 16:30", "status": "Terkirim — kantong semen sobek parah terkena hujan", "location": "Yogyakarta"}
     ]'::jsonb
 );
 
