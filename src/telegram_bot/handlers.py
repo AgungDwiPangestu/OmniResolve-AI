@@ -474,6 +474,36 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _run_pipeline(update, context, session, chat_id)
         return
 
+    # --- Jika menunggu pilihan resolusi (ketik 1 atau 2) ---
+    if session.step == ConversationStep.AWAITING_CHOICE:
+        choice = text.strip()
+        ref = f"`{session.last_session_id}`" if session.last_session_id else ""
+        if choice == "1":
+            await update.message.reply_text(
+                f"✅ *Voucher / Kompensasi Berhasil Diaktifkan!*\n\n"
+                f"Voucher kompensasi telah kami aktifkan ke akun Qhomemart Anda.\n"
+                f"• Referensi: {ref}\n\n"
+                "Voucher dapat digunakan pada pembelian berikutnya. "
+                "Terima kasih telah mempercayakan masalah Anda kepada kami 🙏",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+            session.step = ConversationStep.DONE
+        elif choice == "2":
+            await update.message.reply_text(
+                f"📄 *Permintaan Surat Penjelasan Resmi Diterima*\n\n"
+                f"Tim kami akan menyiapkan dokumen surat penjelasan resmi dan mengirimkannya ke email Anda dalam 1×24 jam kerja.\n"
+                f"• Referensi: {ref}\n\n"
+                "Apabila ada pertanyaan lebih lanjut, silakan hubungi CS kami. 🙏",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+            session.step = ConversationStep.DONE
+        else:
+            await update.message.reply_text(
+                "⚠️ Pilihan tidak valid.\n\nKetik *1* untuk mengaktifkan kompensasi atau *2* untuk surat penjelasan resmi.",
+                parse_mode=ParseMode.MARKDOWN,
+            )
+        return
+
     # --- Jika pipeline sedang berjalan ---
     if session.step == ConversationStep.PROCESSING:
         await update.message.reply_text(
@@ -705,7 +735,16 @@ async def _run_pipeline(update, context, session, chat_id: int):
             reply_markup=reply_markup,
         )
 
-        session.step = ConversationStep.DONE
+        # Simpan info untuk AWAITING_CHOICE dan arahkan pelanggan
+        session.last_session_id = session_id
+        session.last_decision_type = decision.get('decision_type', '') if decision else ''
+
+        # Jika ada pilihan untuk pelanggan (voucher/reject → tawarkan 1 atau 2)
+        if decision and decision.get('decision_type') in ('voucher', 'reject'):
+            session.step = ConversationStep.AWAITING_CHOICE
+        else:
+            session.step = ConversationStep.DONE
+
         broadcast_event("session_end", session_id, {"project_name": "OmniResolve-AI"})
         logger.info("telegram.pipeline_done", chat_id=chat_id, session_id=session_id)
 

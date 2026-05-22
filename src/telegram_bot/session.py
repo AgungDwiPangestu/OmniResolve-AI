@@ -11,13 +11,14 @@ from enum import Enum
 
 class ConversationStep(str, Enum):
     """Tahap dalam alur percakapan dengan pelanggan."""
-    GREETING    = "greeting"        # Baru mulai
-    GATHERING   = "gathering"       # Mengumpulkan info (order ID, deskripsi)
-    WAITING_PHOTO = "waiting_photo" # Menunggu foto bukti
-    PROCESSING  = "processing"      # Pipeline agent sedang berjalan
-    DONE        = "done"            # Selesai, siap terima komplain baru
-    ESCALATED   = "escalated"       # Menunggu respon CS Manusia
-    CHECKING_STATUS = "checking_status" # Menunggu input kode referensi atau tombol lacak
+    GREETING         = "greeting"          # Baru mulai
+    GATHERING        = "gathering"         # Mengumpulkan info (order ID, deskripsi)
+    WAITING_PHOTO    = "waiting_photo"     # Menunggu foto bukti
+    PROCESSING       = "processing"        # Pipeline agent sedang berjalan
+    AWAITING_CHOICE  = "awaiting_choice"   # Menunggu pilihan pelanggan (ketik 1 atau 2)
+    DONE             = "done"              # Selesai, siap terima komplain baru
+    ESCALATED        = "escalated"         # Menunggu respon CS Manusia
+    CHECKING_STATUS  = "checking_status"   # Menunggu input kode referensi atau tombol lacak
 
 
 @dataclass
@@ -31,6 +32,10 @@ class CustomerSession:
     complaint_text: str = ""
     order_id: str = ""
     evidence_urls: list[str] = field(default_factory=list)
+
+    # Data untuk AWAITING_CHOICE (setelah pipeline selesai)
+    last_session_id: str = ""
+    last_decision_type: str = ""
 
     # Untuk membangun input ke pipeline
     @property
@@ -55,6 +60,8 @@ class CustomerSession:
         self.complaint_text = ""
         self.order_id = ""
         self.evidence_urls = []
+        self.last_session_id = ""
+        self.last_decision_type = ""
 
 
 class SessionManager:
