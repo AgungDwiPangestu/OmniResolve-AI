@@ -14,10 +14,16 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from src.config import get_settings
 from src.graph.state import GraphState, CompensationDecision
 from src.tools.inventory_tools import get_customer_profile_by_order, check_inventory_status
+from src.tools.vector_store import search_knowledge
 
 logger = structlog.get_logger(__name__)
 
 NEGOTIATOR_SYSTEM_PROMPT = """Kamu adalah Strategic Negotiator OmniResolve-AI — pengambil keputusan finansial yang cerdas untuk Qhomemart (Toko Retail Bahan Bangunan & Furnitur).
+
+BATASAN DOMAIN:
+- Kamu HANYA mengambil keputusan kompensasi untuk keluhan pelanggan Qhomemart.
+- Selalu rujuk SOP dan preseden yang diberikan dalam konteks.
+- Jangan membuat keputusan di luar SOP yang berlaku.
 
 TUGASMU:
 Tentukan kompensasi TERBAIK berdasarkan:
@@ -128,6 +134,18 @@ PROFIL PELANGGAN (CLV):
 
 BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
 """
+
+    # RAG: ambil SOP relevan + preseden keputusan serupa
+    rag_query = f"{complaint['complaint_type']} {complaint['complaint_description']} {audit['audit_notes']}"
+    sop_docs = await search_knowledge(rag_query, collection="sop_policies", k=3)
+    case_docs = await search_knowledge(rag_query, collection="resolved_cases", k=2)
+
+    if sop_docs:
+        sop_context = "\n---\n".join(d.page_content for d in sop_docs)
+        decision_context += f"\nREFERENSI SOP QHOMEMART:\n{sop_context}\n"
+    if case_docs:
+        case_context = "\n---\n".join(d.page_content for d in case_docs)
+        decision_context += f"\nPRESEDEN KEPUTUSAN SERUPA:\n{case_context}\n"
 
     llm = get_llm()
     messages = [

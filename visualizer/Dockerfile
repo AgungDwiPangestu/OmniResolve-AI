@@ -18,6 +18,15 @@ RUN bun install --frozen-lockfile
 # Copy frontend source
 COPY frontend/ ./
 
+# Build args for Next.js NEXT_PUBLIC_* env vars (embedded at build time)
+ARG NEXT_PUBLIC_ARCHIVE_KEY
+ARG NEXT_PUBLIC_OMNI_API_URL
+ARG NEXT_PUBLIC_WS_URL
+
+ENV NEXT_PUBLIC_ARCHIVE_KEY=$NEXT_PUBLIC_ARCHIVE_KEY
+ENV NEXT_PUBLIC_OMNI_API_URL=$NEXT_PUBLIC_OMNI_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+
 # Build static export
 RUN bun run build
 

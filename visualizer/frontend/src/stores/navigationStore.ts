@@ -29,6 +29,8 @@ interface NavigationState {
   isTransitioning: boolean;
   /** Whether an edit-building request is pending */
   pendingEditBuilding: boolean;
+  /** Whether the archive floor has been unlocked with the admin key this session */
+  archiveUnlocked: boolean;
 }
 
 interface NavigationActions {
@@ -54,6 +56,10 @@ interface NavigationActions {
   requestEditBuilding: () => void;
   /** Consume the pending edit-building request (returns true if one was pending) */
   consumeEditBuilding: () => boolean;
+  /** Unlock the archive floor with the admin key (persists for the browser session) */
+  unlockArchive: () => void;
+  /** Lock the archive floor (e.g. when user clicks the lock button) */
+  lockArchive: () => void;
 }
 
 type NavigationStore = NavigationState & NavigationActions;
@@ -71,6 +77,10 @@ export const useNavigationStore = create<NavigationStore>()((set, get) => ({
   transitionDirection: null,
   isTransitioning: false,
   pendingEditBuilding: false,
+  // Restore archive unlock state from sessionStorage (persists within tab, clears on close)
+  archiveUnlocked:
+    typeof window !== "undefined" &&
+    sessionStorage.getItem("archive_unlocked") === "1",
 
   goToBuilding: () =>
     set({
@@ -141,5 +151,15 @@ export const useNavigationStore = create<NavigationStore>()((set, get) => ({
     const pending = get().pendingEditBuilding;
     if (pending) set({ pendingEditBuilding: false });
     return pending;
+  },
+
+  unlockArchive: () => {
+    sessionStorage.setItem("archive_unlocked", "1");
+    set({ archiveUnlocked: true });
+  },
+
+  lockArchive: () => {
+    sessionStorage.removeItem("archive_unlocked");
+    set({ archiveUnlocked: false });
   },
 }));

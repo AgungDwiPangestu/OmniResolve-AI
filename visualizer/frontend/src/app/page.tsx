@@ -44,6 +44,8 @@ import { Breadcrumb } from "@/components/navigation/Breadcrumb";
 import { ViewTransition } from "@/components/navigation/ViewTransition";
 import { BuildingView } from "@/components/views/BuildingView";
 import { FloorView } from "@/components/views/FloorView";
+import { ArchiveKeyPrompt } from "@/components/archive/ArchiveKeyPrompt";
+import { ArchiveView } from "@/components/archive/ArchiveView";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import CommandBar from "@/components/attention/CommandBar";
 import AttentionToasts from "@/components/attention/AttentionToasts";
@@ -164,7 +166,7 @@ export default function V2TestPage(): React.ReactNode {
       if (hitlSessionId) return;
 
       try {
-        const apiBase = `http://${window.location.hostname}:8000`;
+        const apiBase = (process.env.NEXT_PUBLIC_OMNI_API_URL ?? "").replace(/\/$/, "");
         const res = await fetch(`${apiBase}/api/v1/complaints/logs`);
         if (res.ok) {
           const logs = await res.json();
@@ -193,7 +195,7 @@ export default function V2TestPage(): React.ReactNode {
     const fetchHitlDetail = async () => {
       setHitlLoading(true);
       try {
-        const apiBase = `http://${window.location.hostname}:8000`;
+        const apiBase = (process.env.NEXT_PUBLIC_OMNI_API_URL ?? "").replace(/\/$/, "");
         const res = await fetch(`${apiBase}/api/v1/complaints/detail/${hitlSessionId}`);
         if (res.ok) {
           const data = await res.json();
@@ -216,7 +218,7 @@ export default function V2TestPage(): React.ReactNode {
     if (!hitlSessionId) return;
     setHitlActionLoading(true);
     try {
-      const apiBase = `http://${window.location.hostname}:8000`;
+      const apiBase = (process.env.NEXT_PUBLIC_OMNI_API_URL ?? "").replace(/\/$/, "");
       const res = await fetch(`${apiBase}/api/v1/complaints/${action}/${hitlSessionId}`, {
         method: "POST",
       });
@@ -254,6 +256,8 @@ export default function V2TestPage(): React.ReactNode {
 
   // Navigation store
   const view = useNavigationStore((s) => s.view);
+  const getCurrentFloor = useNavigationStore((s) => s.getCurrentFloor);
+  const archiveUnlocked = useNavigationStore((s) => s.archiveUnlocked);
 
   // ------------------------------------------------------------------
   // Floor config + tour initialization
@@ -600,20 +604,26 @@ export default function V2TestPage(): React.ReactNode {
         <ViewTransition
           view={view}
           buildingView={<BuildingView sessions={sessions} />}
-          floorView={
-            <FloorView
-              sessions={sessions}
-              sessionsLoading={sessionsLoading}
-              sessionId={sessionId}
-              isCollapsed={leftSidebarCollapsed}
-              onToggleCollapsed={() =>
-                setLeftSidebarCollapsed(!leftSidebarCollapsed)
-              }
-              onSessionSelect={handleSessionSelect}
-              onDeleteSession={setSessionPendingDelete}
-              onRenameSession={handleRenameSession}
-            />
-          }
+          floorView={(() => {
+            const currentFloor = getCurrentFloor();
+            if (currentFloor?.floorType === "archive") {
+              return archiveUnlocked ? <ArchiveView /> : <ArchiveKeyPrompt />;
+            }
+            return (
+              <FloorView
+                sessions={sessions}
+                sessionsLoading={sessionsLoading}
+                sessionId={sessionId}
+                isCollapsed={leftSidebarCollapsed}
+                onToggleCollapsed={() =>
+                  setLeftSidebarCollapsed(!leftSidebarCollapsed)
+                }
+                onSessionSelect={handleSessionSelect}
+                onDeleteSession={setSessionPendingDelete}
+                onRenameSession={handleRenameSession}
+              />
+            );
+          })()}
         />
       )}
 

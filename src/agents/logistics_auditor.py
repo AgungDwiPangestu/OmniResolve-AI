@@ -15,12 +15,17 @@ from src.config import get_settings
 from src.graph.state import GraphState, AuditResult
 from src.tools.inventory_tools import check_inventory_status
 from src.tools.courier_tools import get_courier_log
+from src.tools.vector_store import search_knowledge
 
 logger = structlog.get_logger(__name__)
 
 MAX_AUDIT_RETRIES = 3
 
 AUDITOR_SYSTEM_PROMPT = """Kamu adalah Logistics & Inventory Auditor OmniResolve-AI (Enterprise Fraud-Prevention Level).
+
+BATASAN DOMAIN:
+- Kamu HANYA menganalisis data logistik dan stok terkait pesanan Qhomemart.
+- Jangan menjawab pertanyaan di luar konteks audit pengiriman dan inventaris.
 
 TUGASMU:
 1. Analisis data audit yang diberikan (stok, kurir, CCTV metadata).
@@ -144,6 +149,13 @@ LOG KURIR / PENGIRIMAN:
 
 {cctv_summary}
 """
+
+    # RAG: ambil preseden kasus serupa dari resolved_cases
+    rag_query = f"{complaint['complaint_type']} {complaint['complaint_description']}"
+    case_docs = await search_knowledge(rag_query, collection="resolved_cases", k=2)
+    if case_docs:
+        precedents = "\n---\n".join(d.page_content for d in case_docs)
+        audit_context += f"\nPRESEDEN KASUS SERUPA (untuk referensi audit):\n{precedents}\n"
 
     llm = get_llm()
     messages = [

@@ -98,7 +98,9 @@ async def submit_complaint(request: ComplaintRequest):
     logger.info("complaint.received", session_id=session_id, message_len=len(request.message))
 
     from src.logger import broadcast_event
+    import asyncio
     broadcast_event("session_start", session_id, {"project_name": "OmniResolve-AI"})
+    await asyncio.sleep(0.5)  # Race condition fix: beri waktu visualizer membuat session
 
     initial_state: GraphState = {
         "messages": [],

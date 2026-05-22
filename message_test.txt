@@ -1,0 +1,322 @@
+================================================================================
+  QHOMEMART — FILE UJI PESAN TELEGRAM
+  OmniResolve-AI Multi-Agent Pipeline Test Suite
+================================================================================
+
+PETUNJUK PENGGUNAAN
+-------------------
+Kirim salah satu pesan di bawah ini ke bot Telegram OmniResolve-AI.
+Setiap pesan sudah diverifikasi sesuai data di database (customers, orders,
+deliveries, products). Perhatikan EKSPEKTASI AI di tiap skenario.
+
+CATATAN TEKNIS DATABASE
+-----------------------
+  KLAIM VALID   → condition_on_pickup='intact' + damage_reported_by_courier=TRUE
+                  ATAU warehouse_condition='damaged_in_warehouse'
+  KLAIM DITOLAK → condition_on_pickup='intact' + damage_reported_by_courier=FALSE
+  HITL DIPICU   → total kompensasi > Rp 1.000.000 (threshold default)
+  STOK HABIS    → warehouse_condition='depleted' atau stock_available=0
+
+
+================================================================================
+ GRUP 1 — BARANG RUSAK SAAT TRANSIT (KLAIM VALID, NILAI < Rp 1 JUTA)
+================================================================================
+Kondisi DB: condition_on_pickup=intact, damage_reported_by_courier=TRUE
+Ekspektasi: Replacement + voucher Rp 50.000 — TANPA HITL
+--------------------------------------------------------------------------------
+
+--- 1A: CUST-001 | Budi Hartono | ORD-QHM-001 | Granit Lantai Niro Granite | Rp 250.000 | Armada Qhomemart ---
+
+Halo tim Qhomemart, saya Budi Hartono pelanggan dengan ID CUST-001.
+Saya mau melapor bahwa pesanan granit lantai saya (Order ORD-QHM-001)
+sampai dalam kondisi beberapa keping pecah. Kurir Armada juga sudah
+mencatat kerusakan saat serah terima. Mohon bisa dikirim pengganti ya.
+Terima kasih.
+
+---
+
+--- 1B: CUST-013 | Eka Permata | ORD-QHM-013 | Bor Listrik Bosch GSB 550 | Rp 680.000 | JNE Trucking ---
+
+Selamat siang. Nama saya Eka Permata, CUST-013.
+Bor listrik Bosch saya yang order ORD-QHM-013 via JNE baru tiba tapi
+dalam kondisi rusak — body-nya retak dan waktu dicoba tidak bisa menyala.
+Saya butuh unit yang baru untuk proyek renovasi saya. Bisa diproses
+penggantiannya? Terima kasih.
+
+---
+
+--- 1C: CUST-008 | Hendra Pratama | ORD-QHM-008 | Lampu LED Philips 12W Pack isi 4 | Rp 120.000 | Indah Logistik ---
+
+Bang, ini Hendra (CUST-008). Lampu LED Philips pack 4 biji
+order ORD-QHM-008 yang kemarin dateng via Indah Logistik
+isinya semua pecah-pecah kena benturan. Bisa minta ganti nggak?
+
+
+================================================================================
+ GRUP 2 — BARANG RUSAK, NILAI BESAR (KLAIM VALID, WAJIB HITL > Rp 1 JUTA)
+================================================================================
+Kondisi DB: damage_reported_by_courier=TRUE atau warehouse_condition='damaged_in_warehouse'
+Ekspektasi: AI rekomendasikan replacement, tapi nilai > Rp 1jt
+            → Email notifikasi dikirim ke supervisor untuk approval
+            → Status percakapan: ESCALATED (menunggu persetujuan)
+--------------------------------------------------------------------------------
+
+--- 2A: CUST-004 | Rina Wijaya | ORD-QHM-004 | Kloset Duduk Toto Eco Washer | Rp 2.400.000 | SiCepat ---
+
+Selamat pagi Qhomemart. Saya Rina Wijaya, customer ID CUST-004.
+Saya sangat kecewa karena kloset duduk Toto yang saya pesan
+(Order ORD-QHM-004, dikirim via SiCepat) tiba dalam kondisi retak
+di bagian dudukannya. Kondisinya sudah seperti ini bahkan sebelum
+dipasang. Saya butuh penggantian unit yang baru dan utuh.
+Mohon segera ditangani karena renovasi kamar mandi saya terhambat.
+
+---
+
+--- 2B: CUST-016 | Hadi Dwi | ORD-QHM-016 | Kitchen Sink Blanco Stainless | Rp 1.850.000 | Indah Logistik ---
+
+Permisi, nama saya Hadi Dwi (CUST-016). Kitchen sink Blanco
+order ORD-QHM-016 saya sudah tiba tapi ada kerusakan di bagian
+bak sink-nya — penyok parah akibat pengiriman Indah Logistik.
+Kondisi ini jelas tidak bisa dipakai. Saya minta unit pengganti
+yang baru secepatnya. Tolong diproses ya.
+
+---
+
+--- 2C: CUST-065 | Indra Ningsih | ORD-QHM-065 | Sofa Minimalis L-Shape Fabric | Rp 5.500.000 | Armada Qhomemart ---
+
+HALO INI INDRA NINGSIH CUST-065!! SOFA L-SHAPE SAYA YANG ORD-QHM-065
+SAMPAI DALAM KONDISI RUSAK PARAH!! RANGKANYA BENGKOK DAN KAINNYA
+SOBEK!! INI HARGANYA 5,5 JUTA DAN KONDISINYA SEPERTI BARANG BEKAS!!
+TOLONG GANTI SEKARANG JUGA!! TIDAK BISA DITOLERIR!!
+
+
+================================================================================
+ GRUP 3 — KLAIM TIDAK TERBUKTI (PENGIRIMAN BERSIH, KLAIM AKAN DITOLAK)
+================================================================================
+Kondisi DB: condition_on_pickup=intact, damage_reported_by_courier=FALSE
+Ekspektasi: AI audit menunjukkan tidak ada bukti kerusakan dari logistik
+            → Klaim DITOLAK (reject), pelanggan diberi penjelasan tertulis
+--------------------------------------------------------------------------------
+
+--- 3A: CUST-014 | Fajar Syahputra | ORD-QHM-014 | Kipas Angin Stand Miyako | Rp 250.000 | GoSend ---
+
+Halo, saya Fajar Syahputra (CUST-014). Kipas Angin Stand Miyako
+pesanan saya dengan order ORD-QHM-014 baru saja sampai kemarin
+lewat GoSend. Tapi begitu dirakit dan dinyalakan, ternyata leher
+kipasnya patah akibat guncangan pengiriman kargo dan baling-balingnya
+tidak mau berputar sama sekali. Tolong kirim unit pengganti yang baru.
+Terima kasih.
+
+---
+
+--- 3B: CUST-006 | Bambang Triyono | ORD-QHM-006 | Cat Tembok Dulux Catylac 5kg | Rp 160.000 | GoSend ---
+
+Selamat sore, saya Bambang Triyono pelanggan ID CUST-006.
+Cat tembok Dulux yang saya pesan via order ORD-QHM-006
+sampai dengan kaleng penyok dan cat bocor ke dalam kardus.
+Produknya jadi tidak bisa dipakai. Mohon penggantian.
+Terima kasih.
+
+---
+
+--- 3C: CUST-010 | Andi Susilo | ORD-QHM-010 | Meja Makan Kayu Jati Minimalis | Rp 3.500.000 | Dakota Cargo ---
+
+Halo Qhomemart. Saya Andi Susilo (CUST-010). Meja makan kayu
+jati order ORD-QHM-010 lewat Dakota Cargo sampai dengan salah
+satu kaki meja patah. Ini jelas cacat produksi atau rusak saat
+pengiriman. Nilai barang hampir 3,5 juta, tolong ganti unit baru.
+Saya tunggu responnya.
+
+
+================================================================================
+ GRUP 4 — STOK HABIS, BARANG BELUM DIKIRIM (MULTI-CHOICE: REFUND vs VOUCHER)
+================================================================================
+Kondisi DB: warehouse_condition='depleted' atau stock_available=0, order pending
+Ekspektasi: AI menawarkan 2 opsi kepada pelanggan:
+            Opsi 1 → Refund penuh 100% harga produk
+            Opsi 2 → Voucher belanja 110% (lebih untung dari refund)
+            Pelanggan mengetik angka 1 atau 2 untuk memilih
+--------------------------------------------------------------------------------
+
+--- 4A: CUST-999 | Pelanggan Baru | ORD-QHM-002 | Semen Instan Mortar Utama 40kg | Rp 85.000 | Belum dikirim ---
+
+Halo, saya pelanggan baru dengan ID CUST-999.
+Saya sudah bayar semen mortar utama order ORD-QHM-002
+tapi sampai sekarang belum ada kabar pengirimannya sama sekali.
+Sudah lebih dari seminggu. Tolong dicek statusnya.
+Apakah barangnya akan dikirim atau tidak?
+
+
+================================================================================
+ GRUP 5 — PELANGGAN MINTA REFUND EKSPLISIT (BUKAN REPLACEMENT)
+================================================================================
+Kondisi DB: Delivery rusak valid, TAPI pelanggan eksplisit minta refund
+Ekspektasi: Guardrail AI aktif → keputusan di-override ke 'refund'
+            Jika nilai > Rp 1jt → tetap trigger HITL sekaligus
+--------------------------------------------------------------------------------
+
+--- 5A: CUST-005 | Dian Sasmita | ORD-QHM-005 | Sofa Minimalis L-Shape | Rp 5.500.000 | JNE Trucking ---
+
+Kepada Tim Qhomemart,
+Saya Dian Sasmita (CUST-005). Sofa L-Shape fabric order ORD-QHM-005
+yang dikirim via JNE Trucking sampai dalam kondisi rusak berat —
+rangka patah dan kain robek di beberapa titik.
+Saya sudah TIDAK MAU penggantian unit lagi karena saya sudah
+terlanjur membeli sofa pengganti di toko lain karena butuh segera.
+Saya hanya minta PENGEMBALIAN DANA (refund) penuh saja.
+Mohon segera diproses. Terima kasih.
+
+---
+
+--- 5B: CUST-017 | Indah Suryani | ORD-QHM-017 | Shower Column Set Toto | Rp 3.200.000 | Armada Qhomemart ---
+
+Siang tim Qhomemart. Indah Suryani di sini, CUST-017.
+Shower column Toto order ORD-QHM-017 via Armada sudah sampai
+tapi rusak — shower head-nya patah dan selang bocor.
+Tolong kembalikan uang saya saja ya, tidak perlu kirim ganti.
+Saya sudah order di tempat lain yang bisa datang lebih cepat.
+ID order ORD-QHM-017, mohon diproses refund-nya.
+
+
+================================================================================
+ GRUP 6 — SALAH KIRIM / PRODUK TIDAK SESUAI PESANAN (WRONG ITEM)
+================================================================================
+Kondisi DB: Delivery tercatat bersih, tapi customer melaporkan produk salah
+Ekspektasi: AI validasi sebagai wrong_item → kirim ulang produk benar
+            + voucher maaf Rp 50.000 (tanpa HITL jika harga < Rp 1jt)
+--------------------------------------------------------------------------------
+
+--- 6A: CUST-003 | Agus Setiawan | ORD-QHM-003 | Rak Dinding Minimalis Kayu | Rp 150.000 | J&T Express ---
+
+Permisi, saya Agus Setiawan pelanggan ID CUST-003.
+Pesanan rak dinding minimalis kayu saya (ORD-QHM-003) sudah datang
+via J&T, tapi yang dikirim bukan rak yang saya pesan — ukurannya
+berbeda, yang datang ukuran kecil padahal saya pesan ukuran standar.
+Ini jelas salah kirim. Tolong segera kirim produk yang benar.
+
+---
+
+--- 6B: CUST-026 | Taufik Prasetyo | ORD-QHM-026 | Kompor Gas Rinnai 2 Tungku | Rp 420.000 | Dakota Cargo ---
+
+Halo, Taufik Prasetyo nih (CUST-026). Kompor gas Rinnai 2 tungku
+order ORD-QHM-026 yang datang via Dakota Cargo bukan tipe yang saya
+pesan — yang saya terima kompor 1 tungku, padahal di pesanan jelas
+2 tungku. Mohon kirimkan yang benar sesuai pesanan ya.
+Terima kasih.
+
+
+================================================================================
+ GRUP 7 — ORDER TIDAK DIKENAL / DATA TIDAK VALID (FRAUD / KLAIM DITOLAK)
+================================================================================
+Kondisi DB: Order ID tidak ada di database → AI tidak bisa verifikasi
+Ekspektasi: Klaim tidak valid karena data tidak ditemukan, permintaan ditolak
+            dengan penjelasan untuk menghubungi CS dengan data yang benar
+--------------------------------------------------------------------------------
+
+--- 7A: Pelanggan tidak dikenal, order fiktif ---
+
+Halo saya mau komplain. Order saya ORD-QHM-999 sudah datang
+dalam kondisi rusak parah. Nama saya Rudi dan saya sudah bayar
+mahal untuk produk ini. Tolong ganti sekarang.
+
+---
+
+--- 7B: CUST-001 mengklaim order milik pelanggan lain ---
+
+Halo ini Budi Hartono CUST-001. Sofa saya order ORD-QHM-005
+yang saya pesan bulan lalu sampai rusak. Tolong ganti ya.
+
+(⚠️  Catatan: ORD-QHM-005 milik CUST-005/Dian Sasmita, bukan Budi.
+ Ekspektasi: AI akan mendeteksi ketidakcocokan data customer vs order)
+
+
+================================================================================
+ GRUP 8 — PELANGGAN LOYAL (CLV > Rp 10 JUTA) + KLAIM RUSAK TIDAK TERBUKTI
+================================================================================
+Kondisi DB: is_loyal=TRUE, tapi condition_on_pickup=intact + damage=FALSE
+CATATAN PENTING: Semua pelanggan loyal di database memiliki rekam pengiriman
+bersih. Ini skenario di mana loyalitas tidak cukup untuk menggantikan bukti.
+Ekspektasi: AI tetap menolak klaim karena audit logistik tidak mendukung,
+            meski bahasa respons lebih halus/penuh penghargaan untuk pelanggan setia
+--------------------------------------------------------------------------------
+
+--- 8A: CUST-009 | Dewi Aminah | ORD-QHM-009 | Water Heater Ariston 15L | Rp 2.250.000 | Armada Qhomemart ---
+     (is_loyal=TRUE, CLV Rp 141 juta — pelanggan setia premium)
+
+Selamat pagi Qhomemart. Ini Dewi Aminah, pelanggan setia kalian
+dengan ID CUST-009. Saya sudah berbelanja puluhan juta rupiah
+di sini dan ini pertama kalinya saya komplain.
+Water heater Ariston 15L order ORD-QHM-009 yang baru saya terima
+ternyata tidak mau menyala sama sekali — elemen pemanasnya sepertinya
+rusak atau cacat dari pabrik. Sudah saya coba berbagai cara.
+Tolong prioritaskan penanganan saya ya mengingat loyalitas saya
+selama ini. Harapkan penggantian unit yang baik.
+
+---
+
+--- 8B: CUST-039 | Hany Pohan | ORD-QHM-039 | Gunting Dahan Tekiro | Rp 85.000 | GrabExpress ---
+     (is_loyal=TRUE, CLV Rp 102 juta)
+
+Hai admin, saya Hany Pohan (CUST-039). Gunting dahan Tekiro
+order ORD-QHM-039 saya pesan untuk berkebun tapi waktu dicoba
+langsung patah di bagian engsel-nya. Ini cacat produk.
+Padahal saya sudah lama jadi pelanggan Qhomemart loh.
+Boleh minta ganti?
+
+
+================================================================================
+ GRUP 9 — PESAN TIDAK LENGKAP (UJI KEMAMPUAN LIAISON AGENT MENGGALI DATA)
+================================================================================
+Skenario: Pelanggan tidak menyebut order ID atau customer ID
+Ekspektasi: Liaison Agent akan bertanya balik untuk melengkapi data
+            sebelum pipeline dijalankan (data_complete=false)
+--------------------------------------------------------------------------------
+
+--- 9A: Tanpa order ID ---
+
+Halo, lampu LED yang saya beli di Qhomemart rusak semua waktu sampai.
+Tolong diganti.
+
+---
+
+--- 9B: Hanya menyebut nama produk ---
+
+Permisi, sofa saya yang beli dari sini kondisinya rusak parah
+begitu datang. Saya minta penggantian segera. Nama saya Rini.
+
+---
+
+--- 9C: Keluhan di luar topik (uji domain guardrail) ---
+
+Halo, boleh tanya? Hari ini cuaca di Jakarta gimana ya?
+Saya lagi mau belanja tapi bingung mau keluar atau tidak.
+
+
+================================================================================
+ RINGKASAN CEPAT — UNTUK PENGUJIAN EFISIEN
+================================================================================
+
+SKENARIO             | CUST   | ORDER       | PRODUK                  | HASIL EKSPEKTASI
+---------------------|--------|-------------|-------------------------|---------------------------
+Rusak transit < 1jt  | 001    | ORD-QHM-001 | Granit Lantai Niro      | Replacement + voucher 50rb
+Rusak transit < 1jt  | 013    | ORD-QHM-013 | Bor Listrik Bosch       | Replacement + voucher 50rb
+Rusak transit < 1jt  | 008    | ORD-QHM-008 | Lampu LED Philips       | Replacement + voucher 50rb
+Rusak mahal + HITL   | 004    | ORD-QHM-004 | Kloset Toto 2.4jt       | HITL (email supervisor)
+Rusak mahal + HITL   | 016    | ORD-QHM-016 | Kitchen Sink 1.85jt     | HITL (email supervisor)
+Rusak mahal + HITL   | 065    | ORD-QHM-065 | Sofa 5.5jt              | HITL (email supervisor)
+Klaim tidak terbukti | 014    | ORD-QHM-014 | Kipas Angin Miyako      | REJECT
+Klaim tidak terbukti | 006    | ORD-QHM-006 | Cat Tembok Dulux        | REJECT
+Klaim tidak terbukti | 010    | ORD-QHM-010 | Meja Makan Jati 3.5jt   | REJECT
+Stok habis           | 999    | ORD-QHM-002 | Semen Instan            | Multi-choice (1/2)
+Minta refund ekspl.  | 005    | ORD-QHM-005 | Sofa 5.5jt (refund)     | Refund + HITL
+Minta refund ekspl.  | 017    | ORD-QHM-017 | Shower Set 3.2jt        | Refund + HITL
+Salah kirim          | 003    | ORD-QHM-003 | Rak Dinding Kayu        | Replacement kirim ulang
+Salah kirim          | 026    | ORD-QHM-026 | Kompor Gas Rinnai       | Replacement kirim ulang
+Order fiktif         | -      | ORD-QHM-999 | -                       | REJECT (tidak ditemukan)
+Data mismatch        | 001    | ORD-QHM-005 | Order bukan miliknya    | REJECT / deteksi mismatch
+Loyal + tdk terbukti | 009    | ORD-QHM-009 | Water Heater 2.25jt     | REJECT (halus, CLV 141jt)
+Loyal + tdk terbukti | 039    | ORD-QHM-039 | Gunting Dahan 85rb      | REJECT (halus)
+Tidak lengkap        | -      | -           | -                       | Liaison minta data lebih
+Off-topic            | -      | -           | -                       | Guardrail blokir
+
+================================================================================

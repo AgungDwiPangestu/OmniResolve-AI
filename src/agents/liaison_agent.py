@@ -14,11 +14,17 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from src.config import get_settings
 from src.graph.state import GraphState, ComplaintContext
+from src.tools.vector_store import search_knowledge
 
 logger = structlog.get_logger(__name__)
 
-LIAISON_SYSTEM_PROMPT = """Kamu adalah Liaison Agent OmniResolve-AI (First Responder Qhomemart).
+LIAISON_SYSTEM_PROMPT_BASE = """Kamu adalah Liaison Agent OmniResolve-AI (First Responder Qhomemart).
 Tugas utamanya adalah menyerap emosi pelanggan dan memastikan mereka merasa didengar.
+
+BATASAN DOMAIN (SANGAT PENTING):
+- Kamu HANYA bertugas menangani keluhan dan pertanyaan terkait pesanan di Qhomemart.
+- Jika pelanggan menanyakan hal di luar topik Qhomemart (cuaca, politik, resep, dll),
+  tolak dengan sopan: "Saya hanya dapat membantu terkait pesanan dan keluhan belanja di Qhomemart."
 
 TUGASMU:
 1. EMPATI EKSTREM: Jika pelanggan marah (sentiment < -0.5), mulailah dengan permintaan maaf yang sangat tulus.
@@ -29,8 +35,8 @@ TUGASMU:
 
 OUTPUT FORMAT (JSON):
 {
-    "customer_response": "...",  
-    "data_complete": true/false,  
+    "customer_response": "...",
+    "data_complete": true/false,
     "complaint": {
         "customer_id": "...",
         "order_id": "...",
@@ -68,8 +74,17 @@ async def liaison_agent_node(state: GraphState) -> dict:
     
     llm = get_llm()
 
+    # RAG: ambil pola keluhan serupa dari knowledge base
+    faq_docs = await search_knowledge(state["raw_input"], collection="faq_patterns", k=2)
+    rag_context = ""
+    if faq_docs:
+        patterns = "\n---\n".join(d.page_content for d in faq_docs)
+        rag_context = f"\n\nREFERENSI POLA KELUHAN SERUPA:\n{patterns}\n"
+
+    system_content = LIAISON_SYSTEM_PROMPT_BASE + rag_context
+
     messages = [
-        SystemMessage(content=LIAISON_SYSTEM_PROMPT),
+        SystemMessage(content=system_content),
         HumanMessage(content=state["raw_input"]),
     ]
 

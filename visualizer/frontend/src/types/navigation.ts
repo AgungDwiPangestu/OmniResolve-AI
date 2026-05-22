@@ -25,6 +25,7 @@ export interface FloorConfig {
   accent: string;
   icon: string;
   rooms: RoomConfig[];
+  floorType?: string; // "standard" | "archive" — undefined means standard
 }
 
 /** Full building configuration */

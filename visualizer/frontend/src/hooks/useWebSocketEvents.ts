@@ -39,6 +39,9 @@ export function useWebSocketEvents({
 }: UseWebSocketEventsOptions): void {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Exponential backoff: starts at 2s, doubles up to 30s, resets on successful connect
+  const reconnectDelayRef = useRef(2000);
   const processedAgentsRef = useRef<Set<string>>(new Set());
 
   // Connection ID to track which connection is current (prevents stale onclose handlers)
@@ -368,7 +371,8 @@ export function useWebSocketEvents({
               }
 
               // Attention toasts - wire event processing into attention store
-              // Check toast filter preferences before generating toasts
+              // Skip for historical replay events (replay flag set by backend)
+              const isReplayEvent = !!(message.event as Record<string, unknown>).replay;
               const attentionEventTypes = new Set<EventType>([
                 "permission_request",
                 "error",
@@ -377,7 +381,7 @@ export function useWebSocketEvents({
                 "subagent_start",
                 "background_task_notification",
               ]);
-              if (attentionEventTypes.has(message.event.type as EventType)) {
+              if (!isReplayEvent && attentionEventTypes.has(message.event.type as EventType)) {
                 const prefs = usePreferencesStore.getState();
                 const filterMap: Record<string, boolean> = {
                   permission_request: prefs.toastFilterPermission,
@@ -465,10 +469,25 @@ export function useWebSocketEvents({
       setConnected(true);
       setSessionId(sessionId);
 
+      // Reset exponential backoff delay on successful connection
+      reconnectDelayRef.current = 2000;
+
       // Clear processed agents, bubble tracking, and reset spawn positions on reconnect
       processedAgentsRef.current.clear();
       lastSeenBubbleTextRef.current.clear();
       resetSpawnIndex();
+
+      // Start heartbeat to keep connection alive through nginx reverse proxy.
+      // Nginx closes idle WebSocket connections after proxy_read_timeout (commonly 60s).
+      // Sending a ping every 25s prevents the connection from going idle.
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+      heartbeatIntervalRef.current = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 25_000);
     };
 
     ws.onmessage = (event) => {
@@ -496,15 +515,24 @@ export function useWebSocketEvents({
       void event; // Acknowledge parameter
       setConnected(false);
 
-      // Attempt reconnection after 2 seconds if still enabled and same session
+      // Clear heartbeat on disconnect
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
+      }
+
+      // Attempt reconnection with exponential backoff if still enabled and same session
       if (enabled && sessionId === currentSessionIdRef.current) {
+        const delay = reconnectDelayRef.current;
+        reconnectDelayRef.current = Math.min(delay * 2, 30_000);
+
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectTimeoutRef.current = null;
           // Double-check we're still on the same session before reconnecting
           if (sessionId === currentSessionIdRef.current) {
             connect();
           }
-        }, 2000);
+        }, delay);
       }
     };
   }, [sessionId, enabled, handleMessage, setConnected, setSessionId]);
@@ -532,6 +560,10 @@ export function useWebSocketEvents({
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
+      }
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
       }
     };
   }, [sessionId, enabled, connect]);
