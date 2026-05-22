@@ -46,6 +46,7 @@ class FloorConfig(BaseModel):
     accent: str = "#6366f1"
     icon: str = "🏢"
     rooms: list[RoomConfig] = Field(default_factory=lambda: cast(list[RoomConfig], []))
+    floor_type: str = "standard"  # "standard" | "archive"
 
 
 class BuildingConfig(BaseModel):
@@ -205,6 +206,7 @@ def load_building_config_from_toml(
                 accent=str(entry_dict.get("accent", "#6366f1")),
                 icon=str(entry_dict.get("icon", "🏢")),
                 rooms=rooms,
+                floor_type=str(entry_dict.get("type", "standard")),
             )
         )
 

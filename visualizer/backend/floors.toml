@@ -6,3 +6,11 @@ floor_number = 1
 accent = "#f59e0b"
 icon = "🏢"
 repos = ["OmniResolve-AI", "omniresolve-ai", "omni-negotiator", "omni-logistics", "omni-supply-chain"]
+
+[[floors]]
+name = "Archive"
+floor_number = 0
+accent = "#6b7280"
+icon = "🗄️"
+type = "archive"
+repos = []

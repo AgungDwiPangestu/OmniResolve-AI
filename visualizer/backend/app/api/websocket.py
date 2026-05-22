@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 from typing import Any
 
@@ -11,8 +12,8 @@ logger = logging.getLogger(__name__)
 # Valid session/room IDs: alphanumeric, dashes, underscores only
 _VALID_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,128}$")
 
-# Origins permitted for WebSocket connections (localhost only)
-_ALLOWED_WS_ORIGINS = frozenset(
+# Origins permitted for WebSocket connections (localhost only by default)
+_LOCALHOST_WS_ORIGINS = frozenset(
     {
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -23,19 +24,26 @@ _ALLOWED_WS_ORIGINS = frozenset(
     }
 )
 
+def _get_allowed_ws_origins() -> frozenset[str]:
+    """Build the set of allowed WebSocket origins, including any extra production origin."""
+    origins = set(_LOCALHOST_WS_ORIGINS)
+    extra = os.environ.get("EXTRA_ALLOWED_ORIGIN", "").strip().rstrip("/")
+    if extra:
+        origins.add(extra)
+    return frozenset(origins)
+
 
 def validate_websocket_origin(websocket: WebSocket) -> bool:
     """Check the Origin header on a WebSocket handshake.
 
-    Returns True if the origin is allowed (localhost) or absent (non-browser
-    clients like the test suite may not send Origin).  Returns False for
-    disallowed origins.
+    Returns True if the origin is allowed (localhost or configured production
+    domain) or absent (non-browser clients).  Returns False for disallowed origins.
     """
     origin = websocket.headers.get("origin")
     if origin is None:
         # Non-browser clients (curl, test suite) -- rely on localhost middleware
         return True
-    return origin.rstrip("/") in _ALLOWED_WS_ORIGINS
+    return origin.rstrip("/") in _get_allowed_ws_origins()
 
 
 def validate_session_id(session_id: str) -> bool:

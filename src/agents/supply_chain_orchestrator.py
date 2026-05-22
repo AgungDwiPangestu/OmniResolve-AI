@@ -15,11 +15,16 @@ from src.config import get_settings
 from src.graph.state import GraphState, OrchestratorAction
 from src.tools.erp_tools import update_erp_stock, trigger_purchase_order
 from src.tools.courier_tools import dispatch_courier
+from src.tools.vector_store import search_knowledge
 
 logger = structlog.get_logger(__name__)
 
 RESPONSE_COMPOSER_PROMPT = """Kamu adalah Senior Customer Relationship Manager Qhomemart.
 Tugasmu adalah merangkai pesan akhir yang sangat profesional, empatis, dan SOLUTIF.
+
+BATASAN DOMAIN:
+- Kamu hanya berkomunikasi dalam konteks penyelesaian keluhan Qhomemart.
+- Jangan menjawab atau merespons topik di luar keluhan pelanggan Qhomemart.
 
 PANDUAN PENULISAN:
 1. GREETING PERSONAL: Gunakan "Yth. Bapak/Ibu [Nama]" (ambil dari customer_profile). Jika pelanggan setia (is_loyal=true), tambahkan apresiasi atas loyalitasnya.
@@ -129,7 +134,7 @@ async def supply_chain_orchestrator_node(state: GraphState) -> dict:
     customer_name = cp.get("customer_name", "Pelanggan")
     order_id = complaint.get("order_id", "N/A")
     complaint_desc = complaint.get("complaint_description", "")
-    
+
     response_context = f"""
 Nama Pelanggan: {customer_name}
 Order ID: {order_id}
@@ -140,6 +145,13 @@ Aksi berhasil: {', '.join(actions_taken) if actions_taken else 'tidak ada'}
 Aksi gagal: {', '.join(actions_failed) if actions_failed else 'tidak ada'}
 Reasoning: {decision['reasoning']}
 """
+
+    # RAG: ambil contoh respons dari kasus serupa untuk tone yang konsisten
+    rag_query = f"{decision['decision_type']} {complaint.get('complaint_type', '')}"
+    case_docs = await search_knowledge(rag_query, collection="resolved_cases", k=2)
+    if case_docs:
+        examples = "\n---\n".join(d.page_content for d in case_docs)
+        response_context += f"\nREFERENSI POLA RESPONS KASUS SERUPA:\n{examples}\n"
 
     llm = get_llm()
     messages = [
@@ -269,7 +281,7 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
 
                 <!-- Call to Action -->
                 <div style="text-align: center; margin-top: 30px;">
-                    <a href="{settings.base_url}/?approve_session={session_id}" style="background-color: #2a9d8f; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
+                    <a href="{settings.base_url}/?hitl_session={session_id}" style="background-color: #2a9d8f; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
                         🚀 Tinjau & Ambil Keputusan di Dashboard
                     </a>
                 </div>

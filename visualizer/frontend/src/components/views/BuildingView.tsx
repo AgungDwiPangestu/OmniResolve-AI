@@ -7,6 +7,50 @@ import type { FloorConfig } from "@/types/navigation";
 import type { Session } from "@/hooks/useSessions";
 
 // ============================================================================
+// ARCHIVE FLOOR ROW (restricted access, different visual treatment)
+// ============================================================================
+
+interface ArchiveFloorRowProps {
+  floor: FloorConfig;
+  onClick: (origin: { x: number; y: number }) => void;
+}
+
+function ArchiveFloorRow({ floor, onClick }: ArchiveFloorRowProps): React.ReactNode {
+  return (
+    <button
+      onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
+      data-floor-id={floor.id}
+      className="group flex items-stretch w-full rounded-lg border border-dashed border-slate-700 bg-slate-950 hover:border-slate-500 hover:bg-slate-900 transition-all duration-200"
+    >
+      {/* Floor number badge */}
+      <div className="flex items-center justify-center w-16 rounded-l-lg text-2xl font-bold font-mono text-slate-600 bg-slate-800/50">
+        B1
+      </div>
+
+      {/* Floor info */}
+      <div className="flex-grow flex items-center gap-4 px-5 py-4">
+        <span className="text-2xl grayscale opacity-70 group-hover:opacity-100 transition-opacity">
+          {floor.icon}
+        </span>
+        <div className="flex flex-col items-start">
+          <span className="text-lg font-bold text-slate-400 group-hover:text-slate-200 transition-colors">
+            {floor.name}
+          </span>
+          <span className="text-xs text-slate-600 font-mono tracking-widest uppercase">
+            Restricted Access
+          </span>
+        </div>
+      </div>
+
+      {/* Lock icon */}
+      <div className="flex items-center px-4 text-slate-600 group-hover:text-slate-400 transition-colors text-lg">
+        🔒
+      </div>
+    </button>
+  );
+}
+
+// ============================================================================
 // FLOOR ROW
 // ============================================================================
 
@@ -151,6 +195,19 @@ export function BuildingView({ sessions }: BuildingViewProps): React.ReactNode {
 
         {/* Floors sorted top-down by floor number (highest first) */}
         {sortedFloors.map((floor) => {
+          if (floor.floorType === "archive") {
+            return (
+              <ArchiveFloorRow
+                key={floor.id}
+                floor={floor}
+                onClick={(origin) => {
+                  useNavigationStore.getState().setTransitionOrigin(origin);
+                  goToFloor(floor.id);
+                }}
+              />
+            );
+          }
+
           const floorSessions = sessions.filter((s) =>
             sessionMatchesFloor(s, floor),
           );

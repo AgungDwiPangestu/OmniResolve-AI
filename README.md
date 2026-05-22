@@ -2,31 +2,59 @@
 
 **Autonomous Omni-Channel Retail Concierge & Conflict Resolver**
 
-Sistem Multi-Agent berbasis **ReAct (Reason + Act)** + **LangGraph** untuk automasi resolusi konflik pelanggan dan optimalisasi inventaris real-time di industri ritel.
+Sistem Multi-Agent berbasis **ReAct (Reason + Act)** + **LangGraph** untuk automasi resolusi konflik pelanggan dan optimalisasi inventaris real-time di industri ritel. Dilengkapi sistem **RAG (Retrieval-Augmented Generation)** yang terus belajar dari setiap kasus yang diselesaikan.
 
 ---
 
-## 🏗 Arsitektur
+## Arsitektur
+
+### Pipeline Multi-Agent
 
 ```
 Pelanggan (via Telegram Bot)
     │
     ▼
 [A] Liaison Agent          ← Sentiment analysis + entity extraction
-    │
+    │   ↑ RAG: faq_patterns
     ▼
 [B] Logistics Auditor      ← Cross-check CCTV, kurir, stok (self-correction loop)
-    │
+    │   ↑ RAG: resolved_cases
     ▼
 [C] Strategic Negotiator   ← CLV-based decision (voucher / replacement / refund)
-    │
-    ├─ (HITL)─▶ Supervisor Notification (jika kompensasi > Rp 1.000.000)
+    │   ↑ RAG: sop_policies + resolved_cases
+    ├─ (HITL) ─▶ Supervisor Notification (jika kompensasi > Rp 1.000.000) → END
     │
     ▼
 [D] Supply Chain Orchestrator  ← ERP update + dispatch kurir + trigger PO
+    │   ↑ RAG: resolved_cases
+    ▼
+[E] RAG Feedback Node      ← Auto-ingest kasus ke knowledge base → END
 ```
 
-## ✨ Key Features
+### Sistem RAG (Pembelajaran Berkelanjutan)
+
+```
+Knowledge Base (pgvector)
+┌─────────────────────────────────────────────────────────────┐
+│  Collection          │ Sumber             │ Dipakai oleh    │
+│──────────────────────┼────────────────────┼─────────────────│
+│  sop_policies        │ Manual admin       │ Negotiator      │
+│  resolved_cases      │ AUTO (feedback)    │ Auditor, Nego,  │
+│                      │                    │ Orchestrator    │
+│  faq_patterns        │ Manual + auto      │ Liaison         │
+│  product_catalog     │ Manual admin       │ (semua agen)    │
+└─────────────────────────────────────────────────────────────┘
+         ▲                          │
+         │ ingest                   │ retrieve (similarity search)
+         │                          ▼
+    [RAG Feedback]           [Setiap LLM call]
+    Setelah setiap           Agen mendapat konteks
+    kasus selesai            domain-spesifik
+```
+
+---
+
+## Key Features
 
 | Feature | Deskripsi |
 |---|---|
@@ -34,11 +62,15 @@ Pelanggan (via Telegram Bot)
 | **Self-Correction** | Auditor dapat loop kembali jika data belum conclusive |
 | **CLV-Based Decisions** | Keputusan kompensasi berbasis Customer Lifetime Value |
 | **Human-in-the-Loop** | Auto-notifikasi supervisor untuk kompensasi > Rp 1.000.000 |
+| **RAG Continuous Learning** | Knowledge base tumbuh otomatis dari setiap kasus selesai |
+| **Domain Guardrails** | Agen menolak pertanyaan di luar lingkup Qhomemart |
 | **Traceability (CoT)** | Setiap keputusan memiliki Chain of Thought yang dapat diinspeksi |
 | **Telegram Bot** | Interface pelanggan via Telegram (polling/webhook) |
-| **OpenAI-Compatible API** | Backend compatible dengan berbagai frontend AI |
+| **Admin Knowledge API** | REST API untuk mengelola knowledge base secara manual |
 
-## ⚙️ Tech Stack
+---
+
+## Tech Stack
 
 | Layer | Teknologi |
 |---|---|
@@ -53,7 +85,7 @@ Pelanggan (via Telegram Bot)
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -87,9 +119,9 @@ TELEGRAM_MODE=polling   # polling untuk dev, webhook untuk production
 
 ---
 
-## 🐳 Menjalankan Container
+## Menjalankan Container
 
-### ▶️ Start — Pertama Kali atau Setelah Update Kode
+### Start — Pertama Kali atau Setelah Update Kode
 
 > Gunakan `--build` untuk rebuild image saat ada perubahan kode atau `requirements.txt`
 
@@ -107,9 +139,7 @@ Flag `-d` artinya *detached* (berjalan di background).
 
 ---
 
-### ▶️ Start — Tanpa Rebuild (Container Sudah Ada)
-
-Jika kode **tidak berubah** dan hanya ingin menghidupkan kembali container yang sudah di-build:
+### Start — Tanpa Rebuild (Container Sudah Ada)
 
 **Podman:**
 ```bash
@@ -123,9 +153,7 @@ docker compose up -d
 
 ---
 
-### 🔄 Restart Container
-
-Gunakan saat sudah mengubah **`.env`** (misal: mengisi API key baru) tanpa perlu rebuild image:
+### Restart Container
 
 **Restart semua service:**
 
@@ -137,7 +165,7 @@ podman-compose restart
 docker compose restart
 ```
 
-**Restart satu service saja (misal: hanya API):**
+**Restart satu service saja:**
 
 ```bash
 # Podman
@@ -149,7 +177,7 @@ docker compose restart api
 
 ---
 
-### ⏹️ Stop Container
+### Stop Container
 
 ```bash
 # Podman
@@ -163,7 +191,7 @@ docker compose down
 
 ---
 
-### 🗑️ Reset Total (hapus data + rebuild dari awal)
+### Reset Total (hapus data + rebuild dari awal)
 
 ```bash
 # Podman
@@ -177,7 +205,7 @@ docker compose down -v && docker compose up --build -d
 
 ---
 
-### 📋 Cek Status & Log
+### Cek Status & Log
 
 ```bash
 # Lihat status semua container
@@ -195,7 +223,7 @@ podman logs --tail 50 omni_api
 
 ---
 
-### 🌐 Akses Setelah Container Jalan
+### Akses Setelah Container Jalan
 
 | Service | URL |
 |---|---|
@@ -204,10 +232,11 @@ podman logs --tail 50 omni_api
 | **Telegram Bot Info** | http://localhost:8000/api/v1/telegram/info |
 | **Chat Endpoint** | http://localhost:8000/api/v1/chat/completions |
 | **Complaints Endpoint** | http://localhost:8000/api/v1/complaints |
+| **Knowledge Base Admin** | http://localhost:8000/api/v1/admin/knowledge/stats |
 
 ---
 
-## 🤖 Setup Telegram Bot
+## Setup Telegram Bot
 
 1. Buka Telegram → cari **@BotFather**
 2. Kirim `/newbot` → ikuti instruksi → salin **token**
@@ -221,7 +250,7 @@ podman logs --tail 50 omni_api
 
 ---
 
-## 🔌 Koneksi ke Frontend (OpenAI-Compatible)
+## Koneksi ke Frontend (OpenAI-Compatible)
 
 Arahkan frontend atau tool apapun ke backend ini:
 
@@ -231,29 +260,222 @@ Arahkan frontend atau tool apapun ke backend ini:
 
 ---
 
-## 🗄️ Database Management (Seed Data Qhomemart)
+## Database Management (Seed Data Qhomemart)
 
-Proyek ini telah dilengkapi dengan skema tabel (ERP/CRM) dan data *dummy* spesifik Qhomemart. File-file ini berada di:
-- `db/init.sql` (Skema Tabel: customers, products, orders, dll)
-- `db/seed.sql` (Isian Data: Budi Hartono, Cat Dulux, Kloset, dll)
+Proyek ini dilengkapi dengan skema tabel (ERP/CRM) dan data *dummy* spesifik Qhomemart.
 
-Jika teman Anda ingin me-reset isi database atau mengeksekusi ulang data *seed* ini (misalnya setelah mengubah kode di `seed.sql`), jalankan perintah berikut di terminal:
+```
+db/init.sql  → Skema tabel: customers, products, orders, dll
+db/seed.sql  → Data dummy: Budi Hartono, Cat Dulux, Kloset, dll
+```
+
+Untuk me-reset isi database:
 
 ```bash
-# Untuk pengguna Podman:
+# Podman:
 podman exec -i omni_postgres psql -U omni_user -d omni_resolve < db/init.sql
 podman exec -i omni_postgres psql -U omni_user -d omni_resolve < db/seed.sql
 
-# Untuk pengguna Docker:
+# Docker:
 docker exec -i omni_postgres psql -U omni_user -d omni_resolve < db/init.sql
 docker exec -i omni_postgres psql -U omni_user -d omni_resolve < db/seed.sql
 ```
 
-*Catatan: `seed.sql` dirancang aman untuk dijalankan berulang kali (menggunakan perintah `TRUNCATE`).*
+*Catatan: `seed.sql` aman dijalankan berulang kali (menggunakan `TRUNCATE`).*
 
 ---
 
-## 🧪 Demo Scenarios
+## RAG & Knowledge Base (Pembelajaran Berkelanjutan)
+
+Sistem RAG memungkinkan agen AI terus belajar dari setiap kasus yang diselesaikan, tanpa perlu fine-tuning model. Pengetahuan tersimpan di pgvector dan diambil secara dinamis saat LLM dipanggil.
+
+### Cara Kerja
+
+1. **Pelanggan mengajukan keluhan** → pipeline berjalan
+2. **Setiap agen** mengambil konteks relevan dari knowledge base *sebelum* memanggil LLM
+3. **Setelah kasus selesai**, Supply Chain Orchestrator otomatis menyimpan ringkasan kasus ke `resolved_cases`
+4. **Kasus berikutnya** → agen menemukan preseden ini → keputusan lebih akurat dan konsisten
+
+### 4 Collection Knowledge Base
+
+| Collection | Berisi | Diisi Oleh |
+|---|---|---|
+| `sop_policies` | Kebijakan kompensasi, SOP Qhomemart, aturan HITL | Admin (manual) |
+| `resolved_cases` | Ringkasan kasus yang berhasil diselesaikan | **Otomatis** (feedback loop) |
+| `faq_patterns` | Pola keluhan umum, guardrail off-topic | Admin (manual) |
+| `product_catalog` | Info produk, garansi, kategori | Admin (manual) |
+
+### Setup Pertama Kali — Seed Knowledge Base
+
+Setelah container berjalan, **wajib** menjalankan seed untuk mengisi knowledge base dengan data awal:
+
+```bash
+# Via curl:
+curl -X POST http://localhost:8000/api/v1/admin/knowledge/seed
+
+# Atau via Swagger UI:
+# Buka http://localhost:8000/docs → cari "Knowledge Base (RAG)" → POST /admin/knowledge/seed → Execute
+```
+
+Output yang diharapkan:
+```json
+{
+  "message": "Knowledge base berhasil di-seed.",
+  "results": {
+    "sop_policies": 7,
+    "faq_patterns": 5,
+    "product_catalog": 3,
+    "resolved_cases": 0
+  },
+  "total_ingested": 15
+}
+```
+
+> `resolved_cases` dimulai 0 — akan terisi otomatis setiap kali ada kasus selesai diproses.
+
+---
+
+### Endpoint Admin Knowledge Base
+
+Semua endpoint tersedia di Swagger: `http://localhost:8000/docs` → seksi **Knowledge Base (RAG)**
+
+#### Cek Statistik
+
+```bash
+curl http://localhost:8000/api/v1/admin/knowledge/stats
+```
+
+```json
+{
+  "collections": {
+    "sop_policies": {"description": "Kebijakan dan SOP bisnis Qhomemart", "document_count": 7},
+    "resolved_cases": {"description": "Riwayat kasus komplain yang berhasil diselesaikan", "document_count": 12},
+    "faq_patterns": {"description": "Pola keluhan umum dan respons yang tepat", "document_count": 5},
+    "product_catalog": {"description": "Informasi produk, kategori, dan FAQ terkait produk", "document_count": 3}
+  }
+}
+```
+
+#### Tambah Dokumen Baru (SOP / FAQ)
+
+Misalnya Anda ingin menambahkan kebijakan baru untuk produk keramik:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/admin/knowledge/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collection": "sop_policies",
+    "documents": [
+      {
+        "content": "Kebijakan khusus produk keramik: Keramik yang retak saat pengiriman mendapat penggantian penuh tanpa syarat, karena sifat produk yang sangat rentan. Tidak perlu foto sebagai bukti untuk klaim keretakan keramik.",
+        "metadata": {
+          "category": "special_policy",
+          "product_type": "keramik",
+          "version": "v1.0"
+        }
+      }
+    ]
+  }'
+```
+
+#### Tambah Pola FAQ Baru
+
+```bash
+curl -X POST http://localhost:8000/api/v1/admin/knowledge/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collection": "faq_patterns",
+    "documents": [
+      {
+        "content": "Pola keluhan: Pelanggan mengeluh cat yang dibeli warnanya berbeda dengan di katalog online. Tipe: wrong_item. Respons: verifikasi kode warna di kemasan vs kode di order, jika berbeda proses penggantian sesuai SOP wrong_item.",
+        "metadata": {
+          "pattern_type": "wrong_item",
+          "product_type": "cat",
+          "keywords": "warna berbeda tidak sesuai katalog"
+        }
+      }
+    ]
+  }'
+```
+
+#### Hapus Collection (Reset)
+
+```bash
+# Hati-hati! Operasi ini tidak bisa dibatalkan.
+curl -X DELETE http://localhost:8000/api/v1/admin/knowledge/resolved_cases
+```
+
+---
+
+### Menambahkan Dokumen via File
+
+Untuk menambahkan banyak dokumen sekaligus, Anda bisa membuat script Python:
+
+```python
+# scripts/ingest_sop.py
+import asyncio
+import httpx
+
+async def main():
+    documents = []
+
+    # Baca dari file teks
+    with open("sop_baru.txt", "r") as f:
+        content = f.read()
+    documents.append({
+        "content": content,
+        "metadata": {"source": "sop_baru.txt", "version": "v1.0"}
+    })
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            "http://localhost:8000/api/v1/admin/knowledge/ingest",
+            json={"collection": "sop_policies", "documents": documents}
+        )
+        print(response.json())
+
+asyncio.run(main())
+```
+
+---
+
+### Bagaimana Agen Menggunakan Knowledge Base
+
+Setiap agen melakukan similarity search sebelum memanggil LLM:
+
+```
+Liaison Agent      → cari "faq_patterns" dengan teks keluhan pelanggan
+                   → hasilnya ditambahkan ke system prompt sebagai
+                     "REFERENSI POLA KELUHAN SERUPA"
+
+Logistics Auditor  → cari "resolved_cases" dengan tipe + deskripsi keluhan
+                   → hasilnya ditambahkan ke context sebagai
+                     "PRESEDEN KASUS SERUPA (untuk referensi audit)"
+
+Strategic          → cari "sop_policies" + "resolved_cases"
+Negotiator         → hasilnya ditambahkan sebagai
+                     "REFERENSI SOP" + "PRESEDEN KEPUTUSAN SERUPA"
+
+Supply Chain       → cari "resolved_cases" dengan tipe keputusan
+Orchestrator       → hasilnya ditambahkan sebagai
+                     "REFERENSI POLA RESPONS KASUS SERUPA"
+```
+
+Dengan cara ini, semakin banyak kasus yang diproses, semakin kaya konteks yang tersedia, dan semakin akurat keputusan AI.
+
+---
+
+### Domain Guardrails
+
+Semua agen memiliki batasan domain yang dibangun di dalam system prompt:
+
+> "Kamu HANYA bertugas menangani keluhan dan pertanyaan terkait pesanan di Qhomemart. Jika pelanggan menanyakan hal di luar topik Qhomemart, tolak dengan sopan."
+
+Ditambah pola FAQ `off_topic` di collection `faq_patterns` yang memperkuat batasan ini. Hasilnya, agen tidak akan menjawab pertanyaan seperti cuaca, politik, atau obrolan umum — hanya fokus pada tugas Qhomemart.
+
+---
+
+## Demo Scenarios
 
 ```bash
 # Jalankan semua test
@@ -272,7 +494,7 @@ curl -X POST http://localhost:8000/api/v1/complaints \
 
 ---
 
-## 📁 Struktur Proyek
+## Struktur Proyek
 
 ```
 OmniResolve-AI/
@@ -284,18 +506,20 @@ OmniResolve-AI/
 ├── src/
 │   ├── config.py                 ← centralized settings (pydantic-settings)
 │   ├── agents/
-│   │   ├── liaison_agent.py          ← Agent A: Front-End Intelligence
-│   │   ├── logistics_auditor.py      ← Agent B: Deep Research + self-correction
-│   │   ├── strategic_negotiator.py   ← Agent C: CLV Decision Maker
-│   │   └── supply_chain_orchestrator.py ← Agent D: Action Executor
+│   │   ├── liaison_agent.py          ← Agent A: Front-End Intelligence + RAG faq_patterns
+│   │   ├── logistics_auditor.py      ← Agent B: Deep Research + RAG resolved_cases
+│   │   ├── strategic_negotiator.py   ← Agent C: CLV Decision Maker + RAG sop+cases
+│   │   └── supply_chain_orchestrator.py ← Agent D: Action Executor + RAG resolved_cases
 │   ├── graph/
 │   │   ├── state.py              ← GraphState TypedDict (shared memory)
-│   │   └── workflow.py           ← LangGraph StateGraph builder
+│   │   ├── workflow.py           ← LangGraph StateGraph builder
+│   │   └── rag_feedback.py       ← Node post-resolution: auto-ingest ke knowledge base
 │   ├── tools/
-│   │   ├── inventory_tools.py    ← mock ERP inventory & customer profile
-│   │   ├── courier_tools.py      ← mock courier API
-│   │   ├── erp_tools.py          ← mock ERP actions (stock, PO, refund)
-│   │   └── vector_store.py       ← pgvector policy document search
+│   │   ├── inventory_tools.py    ← ERP inventory & customer profile
+│   │   ├── courier_tools.py      ← courier API
+│   │   ├── erp_tools.py          ← ERP actions (stock, PO, refund)
+│   │   ├── vector_store.py       ← Multi-collection pgvector (4 namespaces)
+│   │   └── knowledge_ingestion.py ← Ingestion pipeline + seed data + feedback loop
 │   ├── telegram_bot/
 │   │   ├── bot.py                ← entry point (polling / webhook)
 │   │   ├── handlers.py           ← message, photo, command handlers
@@ -306,17 +530,19 @@ OmniResolve-AI/
 │           ├── health.py             ← GET /health
 │           ├── complaints.py         ← POST /api/v1/complaints
 │           ├── chat.py               ← POST /api/v1/chat/completions
-│           └── telegram_webhook.py   ← POST /api/v1/telegram/webhook
+│           ├── telegram_webhook.py   ← POST /api/v1/telegram/webhook
+│           ├── diagnostic.py         ← Diagnostic endpoints
+│           └── admin_knowledge.py    ← Knowledge Base Management (seed, ingest, stats)
 ├── db/
 │   ├── init.sql                  ← schema + pgvector setup
-│   └── seed.sql                  ← demo data
+│   └── seed.sql                  ← demo data (70 kasus Qhomemart)
 └── tests/
     └── test_scenarios.py         ← demo scenarios (Kasus A & B)
 ```
 
 ---
 
-## 🚢 Deployment ke SumoPod
+## Deployment ke SumoPod
 
 1. Push image ke registry:
    ```bash
@@ -333,3 +559,8 @@ OmniResolve-AI/
    ```
 
 4. Health check endpoint sudah siap: `GET /health`
+
+5. **Jangan lupa seed knowledge base setelah deploy:**
+   ```bash
+   curl -X POST https://your-app.sumopod.com/api/v1/admin/knowledge/seed
+   ```

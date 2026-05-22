@@ -142,7 +142,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=settings.get_cors_origins(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -173,6 +173,11 @@ async def get_status() -> dict[str, bool | str | None]:
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str) -> None:
+    import asyncio as _asyncio
+    from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from app.db.models import EventRecord, SessionRecord
+    from app.db.database import get_engine
     from app.api.websocket import validate_session_id, validate_websocket_origin
 
     if not validate_session_id(session_id):
@@ -185,16 +190,120 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str) -> None:
 
     await manager.connect(websocket, session_id)
 
-    current_state = await event_processor.get_current_state(session_id)
-    if current_state:
+    # Load session status and events from DB
+    _engine = get_engine()
+    _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
+
+    async with _session_factory() as db:
+        session_rec = await db.get(SessionRecord, session_id)
+        stmt = (
+            select(EventRecord)
+            .where(EventRecord.session_id == session_id)
+            .order_by(EventRecord.timestamp.asc())
+        )
+        result = await db.execute(stmt)
+        event_records = list(result.scalars().all())
+
+    is_completed = session_rec and session_rec.status == "completed"
+
+    def _build_event_msg(rec: EventRecord, is_replay: bool = False) -> dict:
+        """Format an EventRecord as a WebSocket 'event' message."""
+        agent_id = (rec.data.get("agent_id") if rec.data else None) or "main"
+        ts_utc = (
+            rec.timestamp.astimezone(UTC)
+            if rec.timestamp.tzinfo
+            else rec.timestamp.replace(tzinfo=UTC)
+        )
+        msg = rec.data.get("message", "") if rec.data else ""
+        summaries = {
+            "session_start": "Session dimulai",
+            "session_end": "Session selesai",
+            "subagent_start": f"Agen {agent_id} mulai bekerja",
+            "subagent_stop": f"Agen {agent_id} selesai",
+            "reporting": msg or f"Laporan: {agent_id}",
+            "cleanup": f"Agen {agent_id} keluar",
+        }
+        return {
+            "type": "event",
+            "event": {
+                "id": str(rec.timestamp.timestamp()),
+                "type": rec.event_type,
+                "agentId": agent_id,
+                "summary": summaries.get(rec.event_type, f"{rec.event_type} — {agent_id}"),
+                "timestamp": ts_utc.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                "replay": is_replay,
+            },
+        }
+
+    if is_completed and event_records:
+        # --- HISTORICAL REPLAY for completed sessions ---
+        # Replay state frame by frame so agents animate into the room.
+        # 1. Send initial empty state so office starts clean.
+        # 2. Advance the state machine per event, send state_update + event each step.
+        from app.core.state_machine import StateMachine
+        from app.models.events import Event, EventData, EventType
+
+        sm = StateMachine()
+        initial_state = sm.to_game_state(session_id)
         await manager.send_personal_message(
             {
                 "type": "state_update",
-                "timestamp": current_state.last_updated.isoformat(),
-                "state": current_state.model_dump(mode="json", by_alias=True),
+                "timestamp": datetime.now(UTC).isoformat(),
+                "state": initial_state.model_dump(mode="json", by_alias=True),
             },
             websocket,
         )
+
+        # Small pause before replay starts so the empty office is visible
+        await _asyncio.sleep(0.6)
+
+        sm2 = StateMachine()
+        for rec in event_records:
+            try:
+                evt = Event(
+                    event_type=EventType(rec.event_type),
+                    session_id=session_id,
+                    timestamp=rec.timestamp,
+                    data=EventData.model_validate(rec.data) if rec.data else EventData(),
+                )
+                sm2.transition(evt)
+            except Exception:
+                pass
+
+            state = sm2.to_game_state(session_id)
+
+            # Send event (populates event log panel, replay=True suppresses attention toasts)
+            await manager.send_personal_message(_build_event_msg(rec, is_replay=True), websocket)
+
+            # Send state update (drives agent animations)
+            await manager.send_personal_message(
+                {
+                    "type": "state_update",
+                    "timestamp": rec.timestamp.isoformat(),
+                    "state": state.model_dump(mode="json", by_alias=True),
+                },
+                websocket,
+            )
+
+            # Delay between frames — longer for arrival/departure events for animation
+            delay = 1.2 if rec.event_type in ("subagent_start", "subagent_stop", "cleanup") else 0.5
+            await _asyncio.sleep(delay)
+
+    else:
+        # --- LIVE session: send current state + all historical events ---
+        current_state = await event_processor.get_current_state(session_id)
+        if current_state:
+            await manager.send_personal_message(
+                {
+                    "type": "state_update",
+                    "timestamp": current_state.last_updated.isoformat(),
+                    "state": current_state.model_dump(mode="json", by_alias=True),
+                },
+                websocket,
+            )
+        # Populate event log with historical events
+        for rec in event_records:
+            await manager.send_personal_message(_build_event_msg(rec), websocket)
 
     project_root = await event_processor.get_project_root(session_id)
     if project_root:

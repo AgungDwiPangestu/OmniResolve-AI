@@ -15,6 +15,7 @@ from src.agents.supply_chain_orchestrator import (
     supply_chain_orchestrator_node,
     hitl_supervisor_node,
 )
+from src.graph.rag_feedback import rag_feedback_node
 
 logger = structlog.get_logger(__name__)
 
@@ -32,6 +33,7 @@ def build_graph() -> StateGraph:
     graph.add_node("negotiator", strategic_negotiator_node)
     graph.add_node("orchestrator", supply_chain_orchestrator_node)
     graph.add_node("hitl_supervisor", hitl_supervisor_node)
+    graph.add_node("rag_feedback", rag_feedback_node)
 
     # --- Entry point ---
     graph.set_entry_point("liaison")
@@ -59,11 +61,12 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # --- HITL → END (supervisor akan menghubungi manual) ---
+    # --- HITL → END (supervisor akan menghubungi manual, tidak ada feedback loop) ---
     graph.add_edge("hitl_supervisor", END)
 
-    # --- Orchestrator → END ---
-    graph.add_edge("orchestrator", END)
+    # --- Orchestrator → RAG Feedback → END ---
+    graph.add_edge("orchestrator", "rag_feedback")
+    graph.add_edge("rag_feedback", END)
 
     compiled = graph.compile()
     logger.info("workflow.compiled", nodes=list(graph.nodes.keys()))

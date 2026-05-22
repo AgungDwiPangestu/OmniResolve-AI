@@ -20,6 +20,16 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000",
     ]
 
+    # Extra allowed origin for production deployment (set via env var)
+    # e.g. EXTRA_ALLOWED_ORIGIN=https://omniresolve.pixelwar.tech
+    EXTRA_ALLOWED_ORIGIN: str = ""
+
+    def get_cors_origins(self) -> list[str]:
+        origins = list(self.BACKEND_CORS_ORIGINS)
+        if self.EXTRA_ALLOWED_ORIGIN:
+            origins.append(self.EXTRA_ALLOWED_ORIGIN.rstrip("/"))
+        return origins
+
     DATABASE_URL: str = f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}"
     GIT_POLL_INTERVAL: int = 5
 

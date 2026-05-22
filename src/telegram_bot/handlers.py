@@ -6,6 +6,7 @@ Menangani semua jenis pesan masuk dari pelanggan:
 - Photo message → bukti kerusakan
 - /start, /help, /status → command handlers
 """
+import asyncio
 import uuid
 import structlog
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -513,7 +514,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # --- Kumpulkan data ---
     if session.step == ConversationStep.GATHERING:
-        # Pindahkan kendali percakapan ke Liaison Agent (AI)
+        # Kirim acknowledgment langsung sebelum LLM mulai (respons cepat ke pelanggan)
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
+        await update.message.reply_text(
+            "⏳ Pesan Anda telah kami terima. Mohon tunggu sebentar, agen kami sedang menganalisis keluhan Anda..."
+        )
         await _run_liaison_only(update, context, session)
         return
 
@@ -645,9 +650,11 @@ async def _run_pipeline(update, context, session, chat_id: int):
     pipeline_input = session.build_pipeline_input()
 
     logger.info("telegram.pipeline_start", chat_id=chat_id, session_id=session_id)
-    
+
     from src.logger import broadcast_event
     broadcast_event("session_start", session_id, {"project_name": "OmniResolve-AI"})
+    # Beri waktu visualizer membuat session sebelum event agent pertama masuk
+    await asyncio.sleep(0.5)
 
     try:
         initial_state: GraphState = {
