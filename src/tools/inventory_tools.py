@@ -73,7 +73,41 @@ async def check_inventory_status(order_id: str) -> dict:
     }
 
 
-async def get_customer_profile_mock(customer_id: str) -> CustomerProfile:
+async def find_similar_products(original_product_id: str, max_price_idr: float) -> list[dict]:
+    """
+    Cari produk alternatif dengan stok tersedia dan harga tidak melebihi harga asli.
+    Dipakai saat stok produk asli habis untuk ditawarkan ke pelanggan.
+    """
+    try:
+        conn = await get_db_connection()
+        query = """
+            SELECT product_id, product_name, price_idr, stock_available, warehouse_location
+            FROM products
+            WHERE product_id != $1
+              AND stock_available > 0
+              AND warehouse_condition = 'good'
+              AND price_idr <= $2
+            ORDER BY price_idr DESC
+            LIMIT 3
+        """
+        rows = await conn.fetch(query, original_product_id, max_price_idr)
+        await conn.close()
+        return [
+            {
+                "product_id": r["product_id"],
+                "product_name": r["product_name"],
+                "price_idr": float(r["price_idr"]),
+                "stock_available": r["stock_available"],
+                "warehouse_location": r["warehouse_location"],
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error("db.find_similar_products_error", error=str(e))
+        return []
+
+
+
     """
     Ambil profil pelanggan berdasarkan customer_id dari database.
     """

@@ -47,6 +47,11 @@ async def update_erp_stock(order_id: str, action: str = "reserve_replacement") -
             if product and product["stock_available"] > 0:
                 # Kurangi stok
                 await conn.execute("UPDATE products SET stock_available = stock_available - 1 WHERE product_id = $1", product["product_id"])
+                # Catat movement
+                await conn.execute(
+                    "INSERT INTO stock_movements (product_id, movement_type, quantity, reason, order_id) VALUES ($1, 'out', 1, 'replacement', $2)",
+                    product["product_id"], order_id,
+                )
                 await conn.close()
                 return {
                     "success": True,
@@ -65,6 +70,16 @@ async def update_erp_stock(order_id: str, action: str = "reserve_replacement") -
         elif action == "process_refund":
             # Update status order ke refunded
             await conn.execute("UPDATE orders SET status = 'refunded' WHERE order_id = $1", order_id)
+            # Ambil product_id untuk catat movement
+            product_q = """
+                SELECT oi.product_id FROM order_items oi WHERE oi.order_id = $1 LIMIT 1
+            """
+            p = await conn.fetchrow(product_q, order_id)
+            if p:
+                await conn.execute(
+                    "INSERT INTO stock_movements (product_id, movement_type, quantity, reason, order_id) VALUES ($1, 'out', 1, 'refund', $2)",
+                    p["product_id"], order_id,
+                )
             await conn.close()
             return {
                 "success": True,

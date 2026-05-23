@@ -475,7 +475,39 @@ Ditambah pola FAQ `off_topic` di collection `faq_patterns` yang memperkuat batas
 
 ---
 
-## Demo Scenarios
+## Visualizer — Qhome Virtual Office
+
+Dashboard real-time untuk monitoring pipeline agent, manajemen inventaris, dan analytics operasional. Berjalan di port **8001** (production: `https://omniresolve.pixelwar.tech`).
+
+### Lantai & Akses
+
+Visualizer memiliki **4 lantai**, masing-masing punya interface dan fungsi berbeda. Tiga lantai bersifat *restricted* dan memerlukan admin key.
+
+| Lantai | Badge | Fungsi | Key |
+|--------|-------|--------|-----|
+| **Boss Room** | 3F | Dashboard eksekutif: statistik keluhan harian, resolved, rejected, pending approval, total kompensasi, estimasi penghematan, chart 7 hari | `BOSS-R7P2X-9KMW3-QHOME` |
+| **Warehouse** | 2F | Inventory control: daftar stok produk (color-coded OK/Low/Depleted), filter & search, histori pergerakan stok masuk/keluar | `WHS-Q8K3N-5MBX7-QHOME` |
+| **OmniResolve HQ** | 1F | Visualisasi kantor real-time: agen AI bergerak, sesi aktif, event log, agent state — tidak memerlukan key | — |
+| **Archive** | B1 | RAG document upload: unggah file PDF/DOCX/MD/TXT untuk menambah konteks SOP atau knowledge base agen | `ARCH-Q9X3M-7KBW2-QHOME` |
+
+> **Catatan keamanan:** Jangan commit file `visualizer/frontend/.env.local`. Key di atas untuk keperluan development. Di production, set sebagai Docker build args.
+
+### Cara Deploy Visualizer
+
+```bash
+podman build \
+  -t docker.io/<username>/omniresolve-visualizer:latest \
+  --build-arg NEXT_PUBLIC_ARCHIVE_KEY=ARCH-Q9X3M-7KBW2-QHOME \
+  --build-arg NEXT_PUBLIC_WAREHOUSE_KEY=WHS-Q8K3N-5MBX7-QHOME \
+  --build-arg NEXT_PUBLIC_BOSS_KEY=BOSS-R7P2X-9KMW3-QHOME \
+  --build-arg NEXT_PUBLIC_OMNI_API_URL=https://your-domain.com \
+  --build-arg NEXT_PUBLIC_WS_URL=wss://your-domain.com \
+  ./visualizer/
+```
+
+---
+
+
 
 ```bash
 # Jalankan semua test

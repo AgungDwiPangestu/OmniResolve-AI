@@ -1,6 +1,22 @@
 building_name = "Qhome Virtual Office"
 
 [[floors]]
+name = "Boss Room"
+floor_number = 3
+accent = "#6366f1"
+icon = "📊"
+type = "boss_room"
+repos = []
+
+[[floors]]
+name = "Warehouse"
+floor_number = 2
+accent = "#22c55e"
+icon = "📦"
+type = "warehouse"
+repos = []
+
+[[floors]]
 name = "OmniResolve Headquarters"
 floor_number = 1
 accent = "#f59e0b"

@@ -13,7 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config import get_settings
 from src.graph.state import GraphState, CompensationDecision
-from src.tools.inventory_tools import get_customer_profile_by_order, check_inventory_status
+from src.tools.inventory_tools import get_customer_profile_by_order, check_inventory_status, find_similar_products
 from src.tools.vector_store import search_knowledge
 
 logger = structlog.get_logger(__name__)
@@ -43,6 +43,9 @@ SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
    - WAJIB berikan DUA OPSI dalam reasoning:
      A. "refund" 100% dari harga produk.
      B. "voucher" sebesar 110% dari harga produk (sebagai insentif agar tidak tarik uang).
+   - Jika tersedia produk alternatif sejenis, tambahkan OPSI C:
+     C. "alternative" — ganti dengan produk alternatif + voucher selisih harga (jika ada).
+       Gunakan data alternatif yang disediakan dalam konteks.
 5. BARANG TERLAMBAT (Late):
    - Berikan "voucher" senilai 10% dari harga barang. Jika keterlambatan > 5 hari, naikkan ke 15%.
 
@@ -101,11 +104,34 @@ async def strategic_negotiator_node(state: GraphState) -> dict:
 
     # Ambil profil pelanggan berdasarkan order_id
     customer_profile = await get_customer_profile_by_order(complaint["order_id"])
-    
+
     # Ambil data produk untuk mengetahui harga
     inventory_data = await check_inventory_status(complaint["order_id"])
     product_price = inventory_data.get("price_idr", 0)
     product_name = inventory_data.get("product_name", "Tidak diketahui")
+    product_id = inventory_data.get("product_id", "")
+
+    # Cari produk alternatif jika stok habis
+    alternative_products: list[dict] = []
+    stock_status = audit.get("stock_status", "")
+    if stock_status in ("depleted", "damaged_in_warehouse") and product_price > 0:
+        # Ambil product_id dari inventory query
+        try:
+            from src.tools.inventory_tools import get_db_connection, normalize_order_id
+            conn = await get_db_connection()
+            row = await conn.fetchrow(
+                """SELECT p.product_id FROM orders o
+                   JOIN order_items oi ON o.order_id = oi.order_id
+                   JOIN products p ON oi.product_id = p.product_id
+                   WHERE o.order_id = $1 LIMIT 1""",
+                normalize_order_id(complaint["order_id"])
+            )
+            await conn.close()
+            if row:
+                product_id = row["product_id"]
+                alternative_products = await find_similar_products(product_id, product_price)
+        except Exception:
+            alternative_products = []
 
     decision_context = f"""
 KELUHAN PELANGGAN:
@@ -119,7 +145,9 @@ DATA PRODUK:
 - Nama Produk: {product_name}
 - Harga Produk (price_idr): Rp {product_price:,.0f}
 - Status Stok: {audit['stock_status']}
-
+{f'''
+PRODUK ALTERNATIF TERSEDIA (stok habis — tawarkan sebagai Opsi C):
+''' + chr(10).join(f"  - {a['product_name']} (Rp {a['price_idr']:,.0f}, stok {a['stock_available']}, ID: {a['product_id']})" for a in alternative_products) if alternative_products else ''}
 HASIL AUDIT:
 - Klaim Valid: {audit['claim_valid']}
 - Log Kurir: {audit['courier_log_summary']}

@@ -36,6 +36,7 @@ export function useFloorConfig(): void {
                   repoName: room.repoName as string,
                 }),
               ),
+              floorType: floor.floorType as string | undefined,
             }),
           ),
         };
