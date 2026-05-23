@@ -13,8 +13,9 @@ CATATAN KEAMANAN:
   Di production, lindungi endpoint ini dengan API key atau middleware auth.
   Contoh: tambahkan dependency `Depends(verify_admin_key)` ke setiap route.
 """
+import io
 import structlog
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from src.tools.knowledge_ingestion import seed_initial_knowledge, ingest_manual_documents
@@ -187,3 +188,88 @@ async def clear_collection(collection: str):
     except Exception as e:
         logger.error("admin.clear_error", collection=collection, error=str(e))
         raise HTTPException(status_code=500, detail=f"Gagal menghapus collection: {e}")
+
+
+def _extract_text_from_file(filename: str, content: bytes) -> str:
+    """Parse file content based on extension. Supports txt, md, pdf, docx."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+    if ext in ("txt", "md"):
+        return content.decode("utf-8", errors="replace")
+
+    if ext == "pdf":
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            raise HTTPException(status_code=500, detail="pypdf tidak terinstall di server.")
+        reader = PdfReader(io.BytesIO(content))
+        pages = [page.extract_text() or "" for page in reader.pages]
+        text = "\n\n".join(p for p in pages if p.strip())
+        if not text.strip():
+            raise HTTPException(status_code=422, detail="PDF tidak mengandung teks yang bisa diekstrak.")
+        return text
+
+    if ext in ("docx", "doc"):
+        try:
+            from docx import Document
+        except ImportError:
+            raise HTTPException(status_code=500, detail="python-docx tidak terinstall di server.")
+        doc = Document(io.BytesIO(content))
+        text = "\n".join(para.text for para in doc.paragraphs if para.text.strip())
+        if not text.strip():
+            raise HTTPException(status_code=422, detail="Dokumen tidak mengandung teks yang bisa diekstrak.")
+        return text
+
+    raise HTTPException(
+        status_code=415,
+        detail=f"Format file '.{ext}' tidak didukung. Gunakan: pdf, docx, md, atau txt.",
+    )
+
+
+@router.post(
+    "/admin/knowledge/upload",
+    response_model=IngestResponse,
+    summary="Upload File Dokumen ke Knowledge Base",
+    description=(
+        "Upload file (PDF, DOCX, Markdown, TXT) dan otomatis parse + ingest ke collection yang dipilih."
+    ),
+    tags=["Knowledge Base (RAG)"],
+)
+async def upload_document_file(
+    file: UploadFile = File(...),
+    collection: str = Form(...),
+    category: str = Form(""),
+    source: str = Form(""),
+):
+    if collection not in COLLECTIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Collection '{collection}' tidak valid. Pilihan: {list(COLLECTIONS.keys())}",
+        )
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="File kosong.")
+
+    filename = file.filename or "upload"
+    text = _extract_text_from_file(filename, raw)
+
+    metadata: dict = {}
+    if category.strip():
+        metadata["category"] = category.strip()
+    metadata["source"] = source.strip() if source.strip() else filename
+
+    try:
+        count = await ingest_manual_documents(
+            [{"content": text, "metadata": metadata}],
+            collection=collection,
+        )
+        logger.info("admin.upload_file", filename=filename, collection=collection, count=count)
+        return IngestResponse(
+            collection=collection,
+            ingested_count=count,
+            message=f"File '{filename}' berhasil diparse dan {count} chunk ditambahkan ke '{collection}'.",
+        )
+    except Exception as e:
+        logger.error("admin.upload_error", filename=filename, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Ingest gagal: {e}")
