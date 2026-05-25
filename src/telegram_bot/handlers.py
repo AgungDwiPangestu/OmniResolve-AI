@@ -549,10 +549,15 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     confirm = (
                         f"✅ *Pilihan Anda (Opsi {choice}) Telah Dicatat*\n\n"
                         f"Anda memilih: _{opt_label}_\n"
-                        f"• Tim gudang kami akan menyiapkan produk pengganti dan menghubungi Anda untuk jadwal pengiriman\n\n"
+                        f"• Tim gudang kami sedang menyiapkan produk pengganti untuk pesanan Anda\n"
+                        f"• Anda akan dihubungi setelah barang siap dikirim\n\n"
                         f"Nomor referensi: {ref}\n"
                         "Terima kasih telah mempercayakan masalah Anda kepada Qhomemart 🙏"
                     )
+                    # Notify warehouse to prepare the replacement/alternative product
+                    order_id_for_wh = session.order_id if session.order_id and session.order_id != "unknown" else None
+                    if order_id_for_wh:
+                        await send_to_warehouse_group(context, session.last_session_id, order_id_for_wh)
                 await update.message.reply_text(confirm, parse_mode=ParseMode.MARKDOWN)
                 session.step = ConversationStep.DONE
             else:

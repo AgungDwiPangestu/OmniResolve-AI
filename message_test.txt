@@ -158,7 +158,7 @@ Ekspektasi: Guardrail AI aktif → keputusan di-override ke 'refund'
 --- 5A: CUST-005 | Dian Sasmita | ORD-QHM-005 | Sofa Minimalis L-Shape | Rp 5.500.000 | JNE Trucking ---
 
 Kepada Tim Qhomemart,
-Saya Dian Sasmita (CUST-005). Sofa L-Shape fabric order ORD-QHM-005
+Saya Dian Sasmita. Sofa L-Shape fabric order ORD-QHM-005
 yang dikirim via JNE Trucking sampai dalam kondisi rusak berat —
 rangka patah dan kain robek di beberapa titik.
 Saya sudah TIDAK MAU penggantian unit lagi karena saya sudah

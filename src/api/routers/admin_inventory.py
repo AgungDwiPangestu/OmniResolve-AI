@@ -141,15 +141,15 @@ async def get_dashboard():
         ) or 0
 
         resolved_today = await conn.fetchval(
-            "SELECT COUNT(*) FROM complaint_sessions WHERE status = 'completed' AND created_at::date = $1", today
+            "SELECT COUNT(*) FROM complaint_sessions WHERE status IN ('completed', 'approved') AND created_at::date = $1", today
         ) or 0
 
         rejected_today = await conn.fetchval(
-            "SELECT COUNT(*) FROM complaint_sessions WHERE decision_type = 'reject' AND created_at::date = $1", today
+            "SELECT COUNT(*) FROM complaint_sessions WHERE (decision_type = 'reject' OR status = 'rejected') AND created_at::date = $1", today
         ) or 0
 
         pending_approval = await conn.fetchval(
-            "SELECT COUNT(*) FROM complaint_sessions WHERE requires_human_approval = TRUE AND status != 'completed'"
+            "SELECT COUNT(*) FROM complaint_sessions WHERE status = 'pending_hitl'"
         ) or 0
 
         total_comp = await conn.fetchval(
@@ -160,8 +160,22 @@ async def get_dashboard():
             "SELECT COALESCE(SUM(compensation_value_idr), 0) FROM complaint_sessions WHERE decision_type != 'reject' AND created_at >= NOW() - INTERVAL '7 days'"
         ) or 0.0
 
+        # Penghematan = biaya CS manual yang dihindari AI (Rp 2.5jt/komplain)
+        # + nilai produk dari klaim fraud yang berhasil ditolak
         money_saved = await conn.fetchval(
-            "SELECT COALESCE(SUM(compensation_value_idr), 0) FROM complaint_sessions WHERE decision_type = 'reject'"
+            """
+            SELECT
+              (COUNT(*) * 2500000)
+              + COALESCE((
+                  SELECT SUM(COALESCE(p.price_idr, 0))
+                  FROM complaint_sessions cs2
+                  JOIN orders o ON cs2.order_id = o.order_id
+                  JOIN order_items oi ON o.order_id = oi.order_id
+                  JOIN products p ON oi.product_id = p.product_id
+                  WHERE cs2.decision_type = 'reject'
+              ), 0)
+            FROM complaint_sessions
+            """
         ) or 0.0
 
         breakdown_rows = await conn.fetch(

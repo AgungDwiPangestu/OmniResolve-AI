@@ -199,17 +199,37 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
 
         decision_type = result.get("decision_type", "reject")
         compensation_value = float(result.get("compensation_value_idr", 0.0))
+        options = result.get("options", [])
 
         # --- Programmatic Guardrails (Resolves Customer Request perfectly) ---
         desc_lower = (complaint.get("complaint_description") or "").lower()
         refund_keywords = ["refund", "dana kembali", "kembalikan uang", "kembalikan dana", "uang kembali", "tidak mau ganti", "sudah beli di tempat lain", "beli di toko lain"]
-        
+        customer_wants_refund = any(kw in desc_lower for kw in refund_keywords)
+
         # Guardrail 1: Force decision to refund if customer explicitly rejects replacement/requests refund
-        if any(kw in desc_lower for kw in refund_keywords):
+        if customer_wants_refund:
             if decision_type == "replacement":
                 logger.info("guardrail.override_decision_type", original=decision_type, new="refund")
                 decision_type = "refund"
-                
+
+        # Guardrail 1.5: Force replacement when claim is valid and stock is available
+        # Prevents LLM from giving large vouchers (stock-out formula) for damage claims with available stock
+        STOCK_UNAVAILABLE = {"depleted", "damaged_in_warehouse", "out_of_stock"}
+        is_late_complaint = (complaint.get("complaint_type") or "").lower() == "late_delivery"
+        if (
+            audit.get("claim_valid", False)
+            and stock_status.lower() not in STOCK_UNAVAILABLE
+            and stock_status not in ("", "unknown")
+            and not customer_wants_refund
+            and not is_late_complaint
+            and decision_type not in ("replacement", "multi_choice")
+        ):
+            logger.info("guardrail.force_replacement_available_stock",
+                        original=decision_type, stock_status=stock_status)
+            decision_type = "replacement"
+            compensation_value = 50_000.0 if customer_profile.get("lifetime_value_idr", 0) > 10_000_000 else 0.0
+            options = []
+
         # Guardrail 2: Correction untuk compensation_value_idr
         if decision_type == "refund" and product_price > 0:
             # Refund: nilai = harga produk + loyalty voucher jika CLV tinggi
@@ -231,15 +251,16 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
                 compensation_value = expected_value
 
         # Check if any options exceed threshold
-        options = result.get("options", [])
         option_exceeds = any(float(opt.get("value", 0)) > settings.hitl_threshold_idr for opt in options)
-        
+
         # Guardrail 3: Force HITL approval if value exceeds the threshold
+        # multi_choice always requires HITL — prevents orchestrator from generating garbled responses
         requires_hitl = (
             result.get("requires_human_approval", False)
             or compensation_value > settings.hitl_threshold_idr
             or option_exceeds
             or (decision_type == "refund" and product_price > settings.hitl_threshold_idr)
+            or decision_type == "multi_choice"
         )
 
         decision: CompensationDecision = {

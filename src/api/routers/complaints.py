@@ -311,6 +311,8 @@ async def approve_complaint(session_id: str):
             sess.last_session_id = session_id
             sess.last_decision_type = "multi_choice"
             sess.multi_choice_options = options
+            if row and row["order_id"]:
+                sess.order_id = row["order_id"]
 
     # Kalau replacement atau multi_choice: notif gudang untuk standby
     if row and d_type in ("replacement", "multi_choice") and row["order_id"]:
