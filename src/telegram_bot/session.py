@@ -36,6 +36,7 @@ class CustomerSession:
     # Data untuk AWAITING_CHOICE (setelah pipeline selesai)
     last_session_id: str = ""
     last_decision_type: str = ""
+    multi_choice_options: list = field(default_factory=list)
 
     # Untuk membangun input ke pipeline
     @property
@@ -62,6 +63,7 @@ class CustomerSession:
         self.evidence_urls = []
         self.last_session_id = ""
         self.last_decision_type = ""
+        self.multi_choice_options = []
 
 
 class SessionManager:

@@ -50,10 +50,12 @@ SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
    - Berikan "voucher" senilai 10% dari harga barang. Jika keterlambatan > 5 hari, naikkan ke 15%.
 
 NILAI KOMPENSASI (compensation_value_idr):
-- Nilai ini harus mencerminkan TOTAL biaya finansial kompensasi yang diterima pelanggan secara jelas di telegram:
-  * Jika keputusan adalah "refund", maka nilai 'compensation_value_idr' WAJIB diisi sebesar: Harga Produk yang di-refund + Voucher Tambahan (jika berhak).
-  * Jika keputusan adalah "replacement", maka nilai 'compensation_value_idr' WAJIB diisi sebesar: Harga Produk pengganti + Voucher Tambahan (jika berhak).
-  * Jangan pernah hanya menuliskan nilai voucher tambahannya saja! Pelanggan akan bingung mengira barangnya dihargai sangat murah.
+- Nilai ini harus mencerminkan TOTAL biaya kompensasi FINANSIAL TAMBAHAN yang diberikan ke pelanggan:
+  * Jika keputusan adalah "refund": isi sebesar harga produk yang di-refund + voucher tambahan (jika berhak).
+  * Jika keputusan adalah "replacement": isi HANYA nilai kompensasi tambahan di luar penggantian barang.
+    - Penggantian barang (replacement) BUKAN kompensasi finansial — biaya ditanggung perusahaan, tidak dihitung di sini.
+    - compensation_value_idr untuk replacement = Rp 50.000 (voucher maaf) jika CLV tinggi, atau Rp 0 jika tidak.
+    - JANGAN isi dengan harga produk pengganti. Itu akan memicu eskalasi supervisor yang tidak perlu.
 
 OUTPUT FORMAT (JSON):
 {
@@ -71,7 +73,8 @@ ATURAN HITL:
 - Jika total nilai kompensasi (atau salah satu opsi) > Rp 1.000.000 → set requires_human_approval = true.
 
 LOGIKA LOYALITAS (CLV):
-- Jika CLV > 10jt, selalu tambahkan Voucher Loyalty Rp 200.000 di luar solusi utama.
+- Untuk keputusan "replacement": tambahkan Voucher Maaf Rp 50.000 jika CLV > 10jt (bukan Rp 200.000 — barang sudah diganti, 50k cukup sebagai goodwill).
+- Untuk keputusan "refund" atau "voucher": tambahkan Voucher Loyalty Rp 200.000 jika CLV > 10jt.
 - Gunakan bahasa yang sangat menghargai status loyalitas mereka."""
 
 
@@ -207,19 +210,25 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
                 logger.info("guardrail.override_decision_type", original=decision_type, new="refund")
                 decision_type = "refund"
                 
-        # Guardrail 2: Ensure compensation_value_idr reflects actual product price for refund/replacement
-        if decision_type in ("refund", "replacement") and product_price > 0:
+        # Guardrail 2: Correction untuk compensation_value_idr
+        if decision_type == "refund" and product_price > 0:
+            # Refund: nilai = harga produk + loyalty voucher jika CLV tinggi
             minimum_value = product_price
-            # If loyal customer (CLV > 10jt), add loyalty voucher Rp 200.000 (standard SOP)
             if customer_profile.get("lifetime_value_idr", 0) > 10_000_000:
                 minimum_value += 200_000.0
-            elif decision_type == "replacement" and any(w in desc_lower for w in ["rusak", "hancur", "pecah", "retak"]):
-                # User business rule: limit to Rp 50,000 discount voucher to avoid company loss
-                minimum_value += 50_000.0
-                
             if compensation_value < minimum_value:
                 logger.info("guardrail.override_compensation_value", original=compensation_value, new=minimum_value)
                 compensation_value = minimum_value
+        elif decision_type == "replacement":
+            # Replacement: nilai kompensasi = HANYA goodwill voucher (max 50k), BUKAN harga produk
+            if customer_profile.get("lifetime_value_idr", 0) > 10_000_000:
+                expected_value = 50_000.0
+            else:
+                expected_value = 0.0
+            if compensation_value > product_price * 0.1:
+                # LLM kemungkinan memasukkan harga produk, koreksi ke goodwill saja
+                logger.info("guardrail.override_replacement_value", original=compensation_value, new=expected_value)
+                compensation_value = expected_value
 
         # Check if any options exceed threshold
         options = result.get("options", [])

@@ -44,15 +44,22 @@ def save_group_chats(data: dict):
         logger.error("telegram.save_group_chats_error", error=str(e))
 
 
-async def send_to_warehouse_group(context, session_id: str, order_id: str):
-    """Mengirim instruksi pengambilan barang ke grup Gudang yang terdaftar."""
+async def send_to_warehouse_group(bot_or_context, session_id: str, order_id: str):
+    """Mengirim instruksi pengambilan barang ke grup Gudang yang terdaftar.
+
+    bot_or_context bisa berupa PTB context (dari handler) atau Bot instance langsung.
+    """
     data = load_group_chats()
     warehouse_chat_id = data.get("warehouse_chat_id")
-    
+
     if not warehouse_chat_id:
         logger.warning("telegram.warehouse_group_not_registered", session_id=session_id)
         return
-        
+
+    # Dukung keduanya: context (dari handler) atau Bot instance langsung
+    from telegram import Bot as _TelegramBot
+    bot = bot_or_context if isinstance(bot_or_context, _TelegramBot) else bot_or_context.bot
+
     settings = get_settings()
     try:
         conn = await asyncpg.connect(
@@ -103,7 +110,7 @@ async def send_to_warehouse_group(context, session_id: str, order_id: str):
         keyboard = [[InlineKeyboardButton("✅ Selesai (Siap Dikirim)", callback_data=f"wh_done:{session_id}:{order_id}")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await context.bot.send_message(
+        await bot.send_message(
             chat_id=warehouse_chat_id,
             text=msg,
             reply_markup=reply_markup,
@@ -475,10 +482,87 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _run_pipeline(update, context, session, chat_id)
         return
 
-    # --- Jika menunggu pilihan resolusi (ketik 1 atau 2) ---
+    # --- Recovery: user balas A/B/C tapi session di-reset (restart container) ---
+    if text.strip().upper() in ("A", "B", "C") and session.step == ConversationStep.GREETING:
+        try:
+            import asyncpg as _asyncpg
+            _settings = get_settings()
+            _conn = await _asyncpg.connect(
+                user=_settings.postgres_user, password=_settings.postgres_password,
+                host=_settings.postgres_host, port=_settings.postgres_port,
+                database=_settings.postgres_db
+            )
+            _row = await _conn.fetchrow(
+                "SELECT session_id, actions_taken FROM complaint_sessions "
+                "WHERE session_id LIKE $1 AND status = 'approved' AND decision_type = 'multi_choice' "
+                "ORDER BY updated_at DESC LIMIT 1",
+                f"tg-{chat_id}-%"
+            )
+            await _conn.close()
+            if _row:
+                _opts = []
+                _at = _row["actions_taken"]
+                if isinstance(_at, dict) and "options" in _at:
+                    _opts = _at["options"]
+                session.step = ConversationStep.AWAITING_CHOICE
+                session.last_session_id = _row["session_id"]
+                session.last_decision_type = "multi_choice"
+                session.multi_choice_options = _opts
+        except Exception:
+            pass  # fallback: biarkan jalan normal
+
+    # --- Jika menunggu pilihan resolusi ---
     if session.step == ConversationStep.AWAITING_CHOICE:
-        choice = text.strip()
+        choice = text.strip().upper()
         ref = f"`{session.last_session_id}`" if session.last_session_id else ""
+
+        # --- Multi-choice: pilih A / B / C ---
+        if session.last_decision_type == "multi_choice":
+            letters = ["A", "B", "C", "D"]
+            options = session.multi_choice_options or []
+            valid_letters = letters[:len(options)] if options else ["A", "B", "C"]
+
+            if choice in valid_letters:
+                idx = letters.index(choice)
+                opt = options[idx] if idx < len(options) else None
+                opt_type = opt.get("type", "") if opt else ""
+                opt_label = opt.get("label", f"Opsi {choice}") if opt else f"Opsi {choice}"
+                opt_value = opt.get("value", 0) if opt else 0
+
+                if opt_type == "refund":
+                    confirm = (
+                        f"✅ *Pilihan Anda (Opsi {choice}) Telah Dicatat*\n\n"
+                        f"Anda memilih: _{opt_label}_\n"
+                        f"• Dana *Rp {opt_value:,.0f}* akan dikembalikan ke rekening/dompet digital Anda dalam 3–5 hari kerja\n\n"
+                        f"Nomor referensi: {ref}\n"
+                        "Terima kasih telah mempercayakan masalah Anda kepada Qhomemart 🙏"
+                    )
+                elif opt_type == "voucher":
+                    confirm = (
+                        f"✅ *Pilihan Anda (Opsi {choice}) Telah Dicatat*\n\n"
+                        f"Anda memilih: _{opt_label}_\n"
+                        f"• Voucher senilai *Rp {opt_value:,.0f}* akan dikirimkan ke akun belanja Anda dalam 1×24 jam\n\n"
+                        f"Nomor referensi: {ref}\n"
+                        "Terima kasih telah mempercayakan masalah Anda kepada Qhomemart 🙏"
+                    )
+                else:  # alternative / replacement
+                    confirm = (
+                        f"✅ *Pilihan Anda (Opsi {choice}) Telah Dicatat*\n\n"
+                        f"Anda memilih: _{opt_label}_\n"
+                        f"• Tim gudang kami akan menyiapkan produk pengganti dan menghubungi Anda untuk jadwal pengiriman\n\n"
+                        f"Nomor referensi: {ref}\n"
+                        "Terima kasih telah mempercayakan masalah Anda kepada Qhomemart 🙏"
+                    )
+                await update.message.reply_text(confirm, parse_mode=ParseMode.MARKDOWN)
+                session.step = ConversationStep.DONE
+            else:
+                await update.message.reply_text(
+                    f"⚠️ Pilihan tidak valid.\n\nKetik *{'*, *'.join(valid_letters)}* untuk memilih opsi yang tersedia.",
+                    parse_mode=ParseMode.MARKDOWN,
+                )
+            return
+
+        # --- Pilihan 1 / 2 (voucher / reject flow) ---
         if choice == "1":
             await update.message.reply_text(
                 f"✅ *Voucher / Kompensasi Berhasil Diaktifkan!*\n\n"
@@ -860,11 +944,13 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         f"• *Ref Sesi:* `{session_id}`\n\n"
                         f"📦 *Daftar Barang untuk Dikirim:*\n"
                         f"{items_list}\n"
-                        f"🚀 _Silakan kurir untuk segera mengambil barang di gudang dan mengantarkannya ke alamat penerima._"
+                        f"🚀 _Silakan kurir segera mengambil barang di gudang dan mengantarkannya ke alamat penerima. Klik tombol di bawah setelah barang berhasil diterima konsumen._"
                     )
+                    courier_keyboard = [[InlineKeyboardButton("✅ Selesai Dikirim", callback_data=f"courier_done:{session_id}:{order_id}")]]
                     await context.bot.send_message(
                         chat_id=courier_chat_id,
                         text=courier_msg,
+                        reply_markup=InlineKeyboardMarkup(courier_keyboard),
                         parse_mode=ParseMode.MARKDOWN
                     )
                     
@@ -897,6 +983,91 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error("telegram.wh_done_callback_error", error=str(e))
             await query.message.reply_text("⚠️ Terjadi kesalahan saat memproses status gudang.")
+
+    elif query.data.startswith("courier_done:"):
+        parts = query.data.split(":")
+        session_id = parts[1]
+        order_id = parts[2]
+
+        settings = get_settings()
+        import asyncpg
+        from datetime import datetime
+
+        try:
+            conn = await asyncpg.connect(
+                user=settings.postgres_user,
+                password=settings.postgres_password,
+                host=settings.postgres_host,
+                port=settings.postgres_port,
+                database=settings.postgres_db
+            )
+            rows = await conn.fetch(
+                """
+                SELECT c.customer_name, c.phone, p.product_name, oi.quantity
+                FROM orders o
+                JOIN customers c ON o.customer_id = c.customer_id
+                JOIN order_items oi ON o.order_id = oi.order_id
+                JOIN products p ON oi.product_id = p.product_id
+                WHERE o.order_id = $1
+                """,
+                order_id
+            )
+            await conn.close()
+
+            timestamp = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            sender_username = query.from_user.username or query.from_user.first_name
+
+            if rows:
+                customer_name = rows[0]["customer_name"]
+                phone = rows[0]["phone"]
+                items_list = "".join(f"• 📦 *{r['product_name']}* - {r['quantity']} unit\n" for r in rows)
+
+                # Update pesan di grup kurir
+                courier_updated_msg = (
+                    f"✅ *Barang Telah Dikirim & Diterima Konsumen*\n\n"
+                    f"• *Kurir:* @{sender_username}\n"
+                    f"• *Waktu Selesai:* {timestamp}\n"
+                    f"• *Penerima:* {customer_name} ({phone})\n"
+                    f"• *Nomor Order:* `{order_id}`\n\n"
+                    f"📋 *Daftar Barang:*\n"
+                    f"{items_list}\n"
+                    f"📍 *Status:* _Konfirmasi pengiriman telah dikirim otomatis ke pelanggan._"
+                )
+                await query.message.edit_text(text=courier_updated_msg, parse_mode=ParseMode.MARKDOWN)
+            else:
+                await query.message.edit_text(
+                    text=f"✅ *Pengiriman Selesai*\n• Kurir: @{sender_username}\n• Waktu: {timestamp}\n• Order: `{order_id}`",
+                    parse_mode=ParseMode.MARKDOWN
+                )
+
+            # Kirim notifikasi ke pelanggan
+            customer_chat_id = None
+            if session_id.startswith("tg-"):
+                try:
+                    customer_chat_id = int(session_id.split("-")[1])
+                except (IndexError, ValueError):
+                    pass
+
+            if customer_chat_id:
+                customer_msg = (
+                    f"📦 *Barang Pengganti Anda Telah Tiba!*\n\n"
+                    f"Halo! Kami ingin mengkonfirmasi bahwa barang pengganti untuk pesanan `{order_id}` "
+                    f"telah berhasil dikirim dan diterima.\n\n"
+                    f"Terima kasih telah mempercayakan belanja Anda kepada *Qhomemart*. "
+                    f"Semoga barang baru Anda memuaskan! 🙏\n\n"
+                    f"_Jika ada kendala lain, jangan ragu untuk menghubungi kami kembali._\n"
+                    f"_Nomor referensi: `{session_id}`_"
+                )
+                await context.bot.send_message(
+                    chat_id=customer_chat_id,
+                    text=customer_msg,
+                    parse_mode=ParseMode.MARKDOWN
+                )
+                logger.info("telegram.courier_done_customer_notified", session_id=session_id)
+
+        except Exception as e:
+            logger.error("telegram.courier_done_callback_error", error=str(e))
+            await query.message.reply_text("⚠️ Terjadi kesalahan saat memproses konfirmasi pengiriman.")
     elif query.data.startswith("faq_"):
         ans = ""
         if query.data == "faq_return":
