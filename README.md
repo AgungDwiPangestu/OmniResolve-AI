@@ -6,6 +6,14 @@ Sistem Multi-Agent berbasis **ReAct (Reason + Act)** + **LangGraph** untuk autom
 
 ---
 
+## Visualisasi Alur Pipeline
+
+> Diagram animasi berikut menunjukkan alur data dari keluhan masuk hingga resolusi otomatis. Titik biru bergerak mengikuti jalur utama; titik merah mewakili kasus HITL (nilai > Rp 1 juta).
+
+![Pipeline Multi-Agent OmniResolve-AI](docs/pipeline-flow.svg)
+
+---
+
 ## Arsitektur
 
 ### Pipeline Multi-Agent
