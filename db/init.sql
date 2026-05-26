@@ -33,6 +33,18 @@ CREATE TABLE IF NOT EXISTS products (
     last_physical_check DATE
 );
 
+CREATE TABLE IF NOT EXISTS stock_movements (
+    id            SERIAL PRIMARY KEY,
+    product_id    VARCHAR(100) REFERENCES products(product_id),
+    movement_type VARCHAR(20) NOT NULL, -- 'in' | 'out' | 'reserve' | 'write_off'
+    quantity      INT NOT NULL,
+    reason        VARCHAR(200),         -- 'initial_stock', 'po_received', 'replacement', 'refund', 'write_off', 'damage_adjustment'
+    order_id      VARCHAR(100),
+    created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_created ON stock_movements(created_at DESC);
+
 CREATE TABLE IF NOT EXISTS orders (
     order_id VARCHAR(100) PRIMARY KEY,
     customer_id VARCHAR(100) REFERENCES customers(customer_id),

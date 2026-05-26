@@ -44,8 +44,10 @@ import { Breadcrumb } from "@/components/navigation/Breadcrumb";
 import { ViewTransition } from "@/components/navigation/ViewTransition";
 import { BuildingView } from "@/components/views/BuildingView";
 import { FloorView } from "@/components/views/FloorView";
-import { ArchiveKeyPrompt } from "@/components/archive/ArchiveKeyPrompt";
+import { FloorKeyPrompt } from "@/components/archive/ArchiveKeyPrompt";
 import { ArchiveView } from "@/components/archive/ArchiveView";
+import { WarehouseView } from "@/components/warehouse/WarehouseView";
+import { BossRoomView } from "@/components/bossroom/BossRoomView";
 import { TourOverlay } from "@/components/tour/TourOverlay";
 import CommandBar from "@/components/attention/CommandBar";
 import AttentionToasts from "@/components/attention/AttentionToasts";
@@ -257,7 +259,13 @@ export default function V2TestPage(): React.ReactNode {
   // Navigation store
   const view = useNavigationStore((s) => s.view);
   const getCurrentFloor = useNavigationStore((s) => s.getCurrentFloor);
-  const archiveUnlocked = useNavigationStore((s) => s.archiveUnlocked);
+  const isFloorUnlocked = useNavigationStore((s) => s.isFloorUnlocked);
+
+  const LOCKED_FLOOR_KEYS: Record<string, string> = {
+    archive:   process.env.NEXT_PUBLIC_ARCHIVE_KEY ?? "",
+    warehouse: process.env.NEXT_PUBLIC_WAREHOUSE_KEY ?? "",
+    boss_room: process.env.NEXT_PUBLIC_BOSS_KEY ?? "",
+  };
 
   // ------------------------------------------------------------------
   // Floor config + tour initialization
@@ -606,8 +614,15 @@ export default function V2TestPage(): React.ReactNode {
           buildingView={<BuildingView sessions={sessions} />}
           floorView={(() => {
             const currentFloor = getCurrentFloor();
-            if (currentFloor?.floorType === "archive") {
-              return archiveUnlocked ? <ArchiveView /> : <ArchiveKeyPrompt />;
+            const floorType = currentFloor?.floorType;
+            if (floorType && floorType !== "standard") {
+              const floorId = currentFloor!.id;
+              if (!isFloorUnlocked(floorId)) {
+                return <FloorKeyPrompt floor={currentFloor!} validKey={LOCKED_FLOOR_KEYS[floorType] ?? ""} />;
+              }
+              if (floorType === "archive")   return <ArchiveView />;
+              if (floorType === "warehouse") return <WarehouseView />;
+              if (floorType === "boss_room") return <BossRoomView />;
             }
             return (
               <FloorView

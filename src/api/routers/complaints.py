@@ -21,6 +21,9 @@ class ComplaintRequest(BaseModel):
     message: str
     session_id: str | None = None
 
+class RejectRequest(BaseModel):
+    reason: str = "Permohonan tidak memenuhi syarat kompensasi berdasarkan kebijakan Qhomemart."
+
 class ComplaintResponse(BaseModel):
     session_id: str
     response: str
@@ -28,6 +31,34 @@ class ComplaintResponse(BaseModel):
     compensation_value_idr: float | None = None
     requires_human_approval: bool = False
     chain_of_thought: str | None = None
+
+
+def extract_telegram_chat_id(session_id: str) -> int | None:
+    """Parse chat_id dari session_id format: tg-{chat_id}-{hex}"""
+    if not session_id.startswith("tg-"):
+        return None
+    parts = session_id.split("-")
+    if len(parts) >= 2:
+        try:
+            return int(parts[1])
+        except ValueError:
+            pass
+    return None
+
+
+async def send_telegram_message(chat_id: int, text: str):
+    """Kirim pesan Telegram ke pelanggan menggunakan Bot standalone."""
+    settings = get_settings()
+    if not settings.telegram_bot_token:
+        logger.warning("telegram.send_skipped", reason="no token")
+        return
+    try:
+        from telegram import Bot
+        async with Bot(token=settings.telegram_bot_token) as bot:
+            await bot.send_message(chat_id=chat_id, text=text, parse_mode="Markdown")
+        logger.info("telegram.hitl_notification_sent", chat_id=chat_id)
+    except Exception as e:
+        logger.warning("telegram.hitl_notification_failed", chat_id=chat_id, error=str(e))
 
 
 async def save_session_to_db(session_id: str, raw_input: str, state: GraphState):
@@ -63,6 +94,13 @@ async def save_session_to_db(session_id: str, raw_input: str, state: GraphState)
         
         status = "pending_hitl" if decision.get("requires_human_approval") else "completed"
         
+        actions_taken_payload = orchestrator.get("actions_taken", [])
+        # Untuk multi_choice: simpan options di actions_taken agar bisa di-fetch saat HITL disetujui
+        if decision.get("decision_type") == "multi_choice" and decision.get("options"):
+            actions_taken_save = {"options": decision["options"], "actions": actions_taken_payload}
+        else:
+            actions_taken_save = actions_taken_payload
+
         await conn.execute(
             query,
             session_id,
@@ -78,7 +116,7 @@ async def save_session_to_db(session_id: str, raw_input: str, state: GraphState)
             decision.get("compensation_value_idr"),
             decision.get("requires_human_approval", False),
             decision.get("reasoning"),
-            json.dumps(orchestrator.get("actions_taken", [])),
+            json.dumps(actions_taken_save),
             json.dumps(orchestrator.get("actions_failed", [])),
             state.get("final_response"),
             status
@@ -191,7 +229,7 @@ async def get_complaint_detail(session_id: str):
 
 @router.post("/complaints/approve/{session_id}")
 async def approve_complaint(session_id: str):
-    """Approval manual oleh stakeholder."""
+    """Approval manual oleh stakeholder. Kirim notifikasi Telegram ke pelanggan + gudang."""
     settings = get_settings()
     try:
         conn = await asyncpg.connect(
@@ -201,20 +239,96 @@ async def approve_complaint(session_id: str):
             port=settings.postgres_port,
             database=settings.postgres_db
         )
-        # 1. Update status di DB
+        row = await conn.fetchrow(
+            "SELECT decision_type, compensation_value_idr, order_id, actions_taken FROM complaint_sessions WHERE session_id = $1",
+            session_id
+        )
         await conn.execute("UPDATE complaint_sessions SET status = 'approved' WHERE session_id = $1", session_id)
-        
-        # 2. Trigger Orchestrator Logic (Update ERP, dsb) secara manual
-        # Di sini kita bisa panggil node orchestrator secara mandiri jika perlu
-        
         await conn.close()
-        return {"message": f"Keluhan {session_id} telah DISETUJUI dan diproses ke ERP."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+    chat_id = extract_telegram_chat_id(session_id)
+    d_type = (row["decision_type"] or "replacement") if row else "replacement"
+    value = (row["compensation_value_idr"] or 0) if row else 0
+    order_id = (row["order_id"] or "-") if row else "-"
+
+    # Ambil options dari DB (disimpan di actions_taken untuk multi_choice)
+    options = []
+    if row and row["actions_taken"]:
+        at = row["actions_taken"]
+        if isinstance(at, dict) and "options" in at:
+            options = at["options"]
+
+    # Bangun isi pesan berdasarkan decision_type
+    if d_type == "replacement":
+        detail = (
+            "📦 *Mekanisme Penggantian Barang:*\n"
+            "• Tim kami akan menghubungi Anda untuk menjadwalkan pengambilan barang yang rusak\n"
+            "• Barang pengganti akan dikirim dalam 1–3 hari kerja setelah barang lama diambil"
+        )
+    elif d_type == "refund":
+        detail = (
+            f"💰 *Mekanisme Refund:*\n"
+            f"• Dana sebesar *Rp {value:,.0f}* akan dikembalikan ke rekening/dompet digital Anda\n"
+            f"• Proses pengembalian dana membutuhkan 3–5 hari kerja"
+        )
+    elif d_type == "multi_choice" and options:
+        letters = ["A", "B", "C", "D"]
+        opts_text = "\n".join(
+            f"  *{letters[i]}.* {opt.get('label', opt.get('type', '?'))} — *Rp {opt.get('value', 0):,.0f}*"
+            for i, opt in enumerate(options[:4])
+        )
+        detail = (
+            "Karena stok produk asli tidak tersedia dalam kondisi baik, kami menawarkan pilihan kompensasi berikut:\n\n"
+            f"📋 *Pilihan Anda:*\n{opts_text}\n\n"
+            "Silakan balas dengan *A*, *B*, atau *C* untuk memilih."
+        )
+    else:
+        detail = (
+            f"🎟️ *Mekanisme Voucher:*\n"
+            f"• Voucher senilai *Rp {value:,.0f}* akan dikirimkan ke akun belanja Anda\n"
+            f"• Voucher dapat digunakan pada transaksi berikutnya di Qhomemart dalam 1×24 jam"
+        )
+
+    msg = (
+        f"✅ *Keluhan Anda Telah Disetujui*\n\n"
+        f"Halo! Manajemen Qhomemart telah meninjau dan *menyetujui* permohonan kompensasi Anda "
+        f"untuk pesanan `{order_id}`.\n\n"
+        f"{detail}\n\n"
+        f"Jika ada pertanyaan, balas pesan ini atau hubungi customer service kami.\n"
+        f"_Nomor referensi: `{session_id}`_"
+    )
+
+    if chat_id:
+        await send_telegram_message(chat_id, msg)
+
+        # Set session ke AWAITING_CHOICE agar bot siap terima pilihan pelanggan
+        if d_type == "multi_choice":
+            from src.telegram_bot.session import session_manager, ConversationStep
+            sess = session_manager.get(chat_id)
+            sess.step = ConversationStep.AWAITING_CHOICE
+            sess.last_session_id = session_id
+            sess.last_decision_type = "multi_choice"
+            sess.multi_choice_options = options
+            if row and row["order_id"]:
+                sess.order_id = row["order_id"]
+
+    # Kalau replacement atau multi_choice: notif gudang untuk standby
+    if row and d_type in ("replacement", "multi_choice") and row["order_id"]:
+        try:
+            from telegram import Bot
+            from src.telegram_bot.handlers import send_to_warehouse_group
+            async with Bot(token=settings.telegram_bot_token) as bot:
+                await send_to_warehouse_group(bot, session_id, row["order_id"])
+        except Exception as e:
+            logger.warning("hitl.warehouse_notify_failed", session_id=session_id, error=str(e))
+
+    return {"message": f"Keluhan {session_id} telah DISETUJUI."}
+
 @router.post("/complaints/reject/{session_id}")
-async def reject_complaint(session_id: str):
-    """Penolakan manual oleh stakeholder."""
+async def reject_complaint(session_id: str, body: RejectRequest = RejectRequest()):
+    """Penolakan manual oleh stakeholder. Kirim notifikasi Telegram ke pelanggan."""
     settings = get_settings()
     try:
         conn = await asyncpg.connect(
@@ -224,8 +338,31 @@ async def reject_complaint(session_id: str):
             port=settings.postgres_port,
             database=settings.postgres_db
         )
-        await conn.execute("UPDATE complaint_sessions SET status = 'rejected' WHERE session_id = $1", session_id)
+        row = await conn.fetchrow(
+            "SELECT order_id FROM complaint_sessions WHERE session_id = $1",
+            session_id
+        )
+        await conn.execute(
+            "UPDATE complaint_sessions SET status = 'rejected', final_response = $2 WHERE session_id = $1",
+            session_id, f"[DITOLAK] {body.reason}"
+        )
         await conn.close()
-        return {"message": f"Keluhan {session_id} telah DITOLAK."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    # Kirim notifikasi Telegram ke pelanggan
+    chat_id = extract_telegram_chat_id(session_id)
+    if chat_id:
+        order_id = (row["order_id"] if row else None) or "-"
+        msg = (
+            f"❌ *Permohonan Keluhan Tidak Dapat Disetujui*\n\n"
+            f"Halo, setelah ditinjau oleh tim manajemen Qhomemart, permohonan kompensasi Anda "
+            f"untuk pesanan `{order_id}` *tidak dapat kami setujui* kali ini.\n\n"
+            f"📋 *Alasan:*\n_{body.reason}_\n\n"
+            f"Jika Anda merasa ada kekeliruan atau ingin mengajukan pertanyaan lebih lanjut, "
+            f"silakan hubungi layanan pelanggan kami.\n"
+            f"_Nomor referensi: `{session_id}`_"
+        )
+        await send_telegram_message(chat_id, msg)
+
+    return {"message": f"Keluhan {session_id} telah DITOLAK."}

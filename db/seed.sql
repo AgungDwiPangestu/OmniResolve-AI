@@ -386,8 +386,90 @@ INSERT INTO deliveries (tracking_id, order_id, courier_name, status, condition_o
 ('QHM-DEL-0708622', 'ORD-QHM-070', 'GoSend', 'delivered', 'intact', FALSE, '[{"time": "2026-05-19 10:00", "status": "Tiba di lokasi tujuan, diterima penerima", "location": "Yogyakarta"}]'::jsonb);
 
 -- -----------------------------------------------------------------------------
--- 6. COMPLAINT SESSIONS (Histori Komplain Demo)
+-- 5b. STOCK MOVEMENTS (Histori Masuk/Keluar Stok)
 -- -----------------------------------------------------------------------------
+INSERT INTO stock_movements (product_id, movement_type, quantity, reason, order_id, created_at) VALUES
+-- PRD-001: Granit Lantai (stok 147)
+('PRD-001', 'in',  200, 'initial_stock',      NULL,          NOW() - INTERVAL '90 days'),
+('PRD-001', 'in',  100, 'po_received',         NULL,          NOW() - INTERVAL '45 days'),
+('PRD-001', 'out',  30, 'replacement',         'ORD-QHM-001', NOW() - INTERVAL '10 days'),
+('PRD-001', 'out',  23, 'refund',              NULL,          NOW() - INTERVAL '5 days'),
+-- PRD-002: Semen Instan (stok 0, depleted)
+('PRD-002', 'in',  150, 'initial_stock',       NULL,          NOW() - INTERVAL '120 days'),
+('PRD-002', 'out',  80, 'replacement',         NULL,          NOW() - INTERVAL '60 days'),
+('PRD-002', 'out',  70, 'replacement',         'ORD-QHM-002', NOW() - INTERVAL '30 days'),
+-- PRD-003: Rak Dinding (stok 122)
+('PRD-003', 'in',  200, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-003', 'out',  50, 'replacement',         NULL,          NOW() - INTERVAL '40 days'),
+('PRD-003', 'out',  28, 'refund',              NULL,          NOW() - INTERVAL '15 days'),
+-- PRD-004: Kloset Duduk Toto (stok 146, damaged_in_warehouse)
+('PRD-004', 'in',  160, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-004', 'out',   4, 'write_off',           NULL,          NOW() - INTERVAL '20 days'),
+('PRD-004', 'out',  10, 'damage_adjustment',   NULL,          NOW() - INTERVAL '7 days'),
+-- PRD-005: Sofa L-Shape (stok 127, damaged_in_warehouse)
+('PRD-005', 'in',  150, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-005', 'in',   20, 'po_received',         NULL,          NOW() - INTERVAL '30 days'),
+('PRD-005', 'out',  10, 'damage_adjustment',   NULL,          NOW() - INTERVAL '14 days'),
+('PRD-005', 'out',   3, 'replacement',         'ORD-QHM-005', NOW() - INTERVAL '4 days'),
+-- PRD-006: Cat Dulux (stok 34)
+('PRD-006', 'in',   80, 'initial_stock',       NULL,          NOW() - INTERVAL '60 days'),
+('PRD-006', 'out',  46, 'replacement',         NULL,          NOW() - INTERVAL '25 days'),
+-- PRD-007: Keran Air (stok 3, hampir habis)
+('PRD-007', 'in',   50, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-007', 'out',  47, 'replacement',         NULL,          NOW() - INTERVAL '20 days'),
+-- PRD-008: Lampu LED Philips (stok 125)
+('PRD-008', 'in',  200, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-008', 'in',   50, 'po_received',         NULL,          NOW() - INTERVAL '20 days'),
+('PRD-008', 'out',  85, 'replacement',         NULL,          NOW() - INTERVAL '15 days'),
+('PRD-008', 'out',  40, 'refund',              NULL,          NOW() - INTERVAL '5 days'),
+-- PRD-009: Water Heater Ariston (stok 20)
+('PRD-009', 'in',   30, 'initial_stock',       NULL,          NOW() - INTERVAL '60 days'),
+('PRD-009', 'out',  10, 'replacement',         NULL,          NOW() - INTERVAL '30 days'),
+-- PRD-010: Meja Makan Kayu Jati (stok 19)
+('PRD-010', 'in',   25, 'initial_stock',       NULL,          NOW() - INTERVAL '75 days'),
+('PRD-010', 'out',   6, 'replacement',         NULL,          NOW() - INTERVAL '20 days'),
+-- PRD-011: Kabel Roll Panasonic (stok 89)
+('PRD-011', 'in',  150, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-011', 'out',  61, 'replacement',         NULL,          NOW() - INTERVAL '30 days'),
+-- PRD-012: Semen Tiga Roda (stok 114)
+('PRD-012', 'in',  200, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-012', 'in',   50, 'po_received',         NULL,          NOW() - INTERVAL '25 days'),
+('PRD-012', 'out',  86, 'replacement',         NULL,          NOW() - INTERVAL '15 days'),
+('PRD-012', 'out',  50, 'refund',              NULL,          NOW() - INTERVAL '6 days'),
+-- PRD-013: Bor Listrik Bosch (stok 148)
+('PRD-013', 'in',  150, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-013', 'out',   2, 'replacement',         NULL,          NOW() - INTERVAL '10 days'),
+-- PRD-014: Kipas Angin Miyako (stok 64)
+('PRD-014', 'in',  100, 'initial_stock',       NULL,          NOW() - INTERVAL '60 days'),
+('PRD-014', 'out',  36, 'replacement',         NULL,          NOW() - INTERVAL '25 days'),
+-- PRD-015: Cermin Hexagonal (stok 117)
+('PRD-015', 'in',  150, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-015', 'out',  33, 'refund',              NULL,          NOW() - INTERVAL '30 days'),
+-- PRD-016: Kitchen Sink Blanco (stok 120)
+('PRD-016', 'in',  150, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-016', 'out',  30, 'replacement',         NULL,          NOW() - INTERVAL '20 days'),
+-- PRD-017: Shower Column Set Toto (stok 92)
+('PRD-017', 'in',  100, 'initial_stock',       NULL,          NOW() - INTERVAL '75 days'),
+('PRD-017', 'out',   8, 'replacement',         NULL,          NOW() - INTERVAL '14 days'),
+-- PRD-022: Stop Kontak (stok 7, hampir habis)
+('PRD-022', 'in',   80, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-022', 'out',  73, 'replacement',         NULL,          NOW() - INTERVAL '10 days'),
+-- PRD-040: Thinner Impala (stok 9, rendah)
+('PRD-040', 'in',   50, 'initial_stock',       NULL,          NOW() - INTERVAL '60 days'),
+('PRD-040', 'out',  41, 'replacement',         NULL,          NOW() - INTERVAL '12 days'),
+-- PRD-042: Kursi Kantor Ergonomis (stok 33)
+('PRD-042', 'in',   50, 'initial_stock',       NULL,          NOW() - INTERVAL '60 days'),
+('PRD-042', 'out',  17, 'replacement',         NULL,          NOW() - INTERVAL '20 days'),
+-- PRD-060: Dispenser Miyako (stok 120)
+('PRD-060', 'in',  150, 'initial_stock',       NULL,          NOW() - INTERVAL '90 days'),
+('PRD-060', 'in',   30, 'po_received',         NULL,          NOW() - INTERVAL '20 days'),
+('PRD-060', 'out',  60, 'replacement',         NULL,          NOW() - INTERVAL '10 days'),
+-- Movements hari ini (untuk dashboard Boss Room)
+('PRD-001', 'out',   2, 'replacement',         'ORD-QHM-001', NOW() - INTERVAL '3 hours'),
+('PRD-008', 'out',   5, 'replacement',         NULL,          NOW() - INTERVAL '2 hours'),
+('PRD-013', 'in',   10, 'po_received',         NULL,          NOW() - INTERVAL '1 hour');
+
+
 INSERT INTO complaint_sessions (
     session_id, raw_input, customer_id, order_id, complaint_type,
     sentiment_score, claim_valid, stock_status, decision_type,

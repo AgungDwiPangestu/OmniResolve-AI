@@ -283,11 +283,16 @@
     <!-- Modal Approval -->
     <div class="modal-overlay" id="modal-approval">
         <div class="modal">
-            <div class="modal-header"><h3>Konfirmasi Persetujuan</h3></div>
+            <div class="modal-header"><h3>Tinjau & Putuskan Keluhan</h3></div>
             <div class="modal-body" id="modal-content"></div>
+            <div id="reject-reason-wrapper" style="display:none; padding: 0 20px 10px;">
+                <label for="reject-reason" style="font-weight:bold; font-size:14px;">Alasan Penolakan:</label>
+                <textarea id="reject-reason" rows="3" style="width:100%; margin-top:6px; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:14px; resize:vertical;" placeholder="Tuliskan alasan penolakan yang jelas untuk pelanggan..."></textarea>
+            </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeModal()">Batal</button>
-                <button class="btn btn-primary" onclick="submitDecision('approve')">Setujui</button>
+                <button class="btn" style="background:#e63946; color:#fff;" onclick="showRejectForm()">Tolak</button>
+                <button class="btn btn-primary" id="btn-confirm-action" onclick="submitDecision('approve')">Setujui</button>
             </div>
         </div>
     </div>
@@ -364,25 +369,52 @@
 
         async function openApproval(sid) {
             currentSessionId = sid;
+            // Reset UI state
+            document.getElementById('reject-reason-wrapper').style.display = 'none';
+            document.getElementById('reject-reason').value = '';
+            document.getElementById('btn-confirm-action').textContent = 'Setujui';
+            document.getElementById('btn-confirm-action').onclick = () => submitDecision('approve');
+
             const res = await fetch(`/api/v1/complaints/detail/${sid}`);
             const data = await res.json();
             document.getElementById('modal-content').innerHTML = `
                 <p><b>Order ID:</b> ${data.order_id}</p>
-                <p><b>Keluhan:</b> ${data.complaint_description}</p>
+                <p><b>Keluhan:</b> ${data.complaint_description || data.raw_input || '-'}</p>
                 <hr>
                 <p style="font-size:20px; color:red;"><b>Kompensasi: Rp ${data.compensation_value_idr.toLocaleString()}</b></p>
+                <p><b>Keputusan AI:</b> ${data.decision_type}</p>
                 <p><i>Analisis: ${data.chain_of_thought}</i></p>
             `;
             document.getElementById('modal-approval').style.display = 'flex';
         }
 
+        function showRejectForm() {
+            document.getElementById('reject-reason-wrapper').style.display = 'block';
+            document.getElementById('btn-confirm-action').textContent = 'Konfirmasi Tolak';
+            document.getElementById('btn-confirm-action').style.background = '#e63946';
+            document.getElementById('btn-confirm-action').onclick = () => submitDecision('reject');
+        }
+
         async function submitDecision(action) {
-            await fetch(`/api/v1/complaints/${action}/${currentSessionId}`, {method:'POST'});
+            const opts = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+            if (action === 'reject') {
+                const reason = document.getElementById('reject-reason').value.trim();
+                if (!reason) {
+                    alert('Harap isi alasan penolakan terlebih dahulu.');
+                    return;
+                }
+                opts.body = JSON.stringify({ reason });
+            }
+            await fetch(`/api/v1/complaints/${action}/${currentSessionId}`, opts);
             closeModal();
             fetchAll();
         }
 
-        function closeModal() { document.getElementById('modal-approval').style.display = 'none'; }
+        function closeModal() {
+            document.getElementById('modal-approval').style.display = 'none';
+            document.getElementById('reject-reason-wrapper').style.display = 'none';
+            document.getElementById('reject-reason').value = '';
+        }
     </script>
 </body>
 </html>

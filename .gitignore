@@ -55,6 +55,7 @@ postgres-data/
 pgdata/
 
 # --- IDE / Editors ---
+.claude/
 .vscode/
 .idea/
 *.suo

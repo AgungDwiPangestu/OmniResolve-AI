@@ -13,56 +13,63 @@ import type {
 // ============================================================================
 
 interface NavigationState {
-  /** Current view mode */
   view: ViewMode;
-  /** Selected floor ID (null when in building view or single mode) */
   floorId: string | null;
-  /** Building configuration loaded from backend */
   buildingConfig: BuildingConfig | null;
-  /** Whether config is loading */
   isLoading: boolean;
-  /** Pixel coordinates of the click that triggered the transition */
   transitionOrigin: { x: number; y: number } | null;
-  /** Direction of the current transition */
   transitionDirection: TransitionDirection;
-  /** Whether a transition animation is in progress */
   isTransitioning: boolean;
-  /** Whether an edit-building request is pending */
   pendingEditBuilding: boolean;
-  /** Whether the archive floor has been unlocked with the admin key this session */
-  archiveUnlocked: boolean;
+  /** Map of floorId → unlocked (persisted in sessionStorage per floor) */
+  unlockedFloors: Record<string, boolean>;
 }
 
 interface NavigationActions {
-  /** Navigate to building view */
   goToBuilding: () => void;
-  /** Navigate to a specific floor */
   goToFloor: (floorId: string) => void;
-  /** Set building config from API (auto-switches to building view if floors exist) */
   setBuildingConfig: (config: BuildingConfig) => void;
-  /** Update building config in-place without triggering a view change */
   updateBuildingConfig: (config: BuildingConfig) => void;
-  /** Set loading state */
   setLoading: (loading: boolean) => void;
-  /** Set transition origin for the next navigation */
   setTransitionOrigin: (origin: { x: number; y: number } | null) => void;
-  /** Mark transition as complete */
   completeTransition: () => void;
-  /** Get the currently selected floor config */
   getCurrentFloor: () => FloorConfig | null;
-  /** Reset back to single view (no building config) */
   resetToSingle: () => void;
-  /** Request the settings modal open on the building tab */
   requestEditBuilding: () => void;
-  /** Consume the pending edit-building request (returns true if one was pending) */
   consumeEditBuilding: () => boolean;
-  /** Unlock the archive floor with the admin key (persists for the browser session) */
+  /** Unlock a floor by floorId */
+  unlockFloor: (floorId: string) => void;
+  /** Lock a floor by floorId */
+  lockFloor: (floorId: string) => void;
+  /** Check if a floor is unlocked */
+  isFloorUnlocked: (floorId: string) => boolean;
+  // Legacy aliases for archive floor (backward compat)
   unlockArchive: () => void;
-  /** Lock the archive floor (e.g. when user clicks the lock button) */
   lockArchive: () => void;
+  archiveUnlocked: boolean;
 }
 
 type NavigationStore = NavigationState & NavigationActions;
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function sessionKey(floorId: string): string {
+  return `unlocked_floor_${floorId}`;
+}
+
+function loadUnlockedFloors(): Record<string, boolean> {
+  if (typeof window === "undefined") return {};
+  const result: Record<string, boolean> = {};
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const k = sessionStorage.key(i);
+    if (k?.startsWith("unlocked_floor_") && sessionStorage.getItem(k) === "1") {
+      result[k.replace("unlocked_floor_", "")] = true;
+    }
+  }
+  return result;
+}
 
 // ============================================================================
 // STORE
@@ -77,10 +84,12 @@ export const useNavigationStore = create<NavigationStore>()((set, get) => ({
   transitionDirection: null,
   isTransitioning: false,
   pendingEditBuilding: false,
-  // Restore archive unlock state from sessionStorage (persists within tab, clears on close)
-  archiveUnlocked:
-    typeof window !== "undefined" &&
-    sessionStorage.getItem("archive_unlocked") === "1",
+  unlockedFloors: loadUnlockedFloors(),
+
+  // ── Legacy computed getter for archive backward compat ───────────────────
+  get archiveUnlocked() {
+    return get().unlockedFloors["archive"] === true;
+  },
 
   goToBuilding: () =>
     set({
@@ -100,7 +109,6 @@ export const useNavigationStore = create<NavigationStore>()((set, get) => ({
 
   setBuildingConfig: (config) =>
     set((state) => {
-      // If config has floors, auto-switch to building view from single
       const hasFloors = config.floors.length > 0;
       const currentView = state.view;
       const newView: ViewMode =
@@ -109,11 +117,7 @@ export const useNavigationStore = create<NavigationStore>()((set, get) => ({
           : currentView === "single"
             ? "single"
             : currentView;
-      return {
-        buildingConfig: config,
-        isLoading: false,
-        view: newView,
-      };
+      return { buildingConfig: config, isLoading: false, view: newView };
     }),
 
   updateBuildingConfig: (config) => set({ buildingConfig: config }),
@@ -153,13 +157,23 @@ export const useNavigationStore = create<NavigationStore>()((set, get) => ({
     return pending;
   },
 
-  unlockArchive: () => {
-    sessionStorage.setItem("archive_unlocked", "1");
-    set({ archiveUnlocked: true });
+  unlockFloor: (floorId) => {
+    sessionStorage.setItem(sessionKey(floorId), "1");
+    set((s) => ({ unlockedFloors: { ...s.unlockedFloors, [floorId]: true } }));
   },
 
-  lockArchive: () => {
-    sessionStorage.removeItem("archive_unlocked");
-    set({ archiveUnlocked: false });
+  lockFloor: (floorId) => {
+    sessionStorage.removeItem(sessionKey(floorId));
+    set((s) => {
+      const next = { ...s.unlockedFloors };
+      delete next[floorId];
+      return { unlockedFloors: next };
+    });
   },
+
+  isFloorUnlocked: (floorId) => get().unlockedFloors[floorId] === true,
+
+  // Legacy aliases
+  unlockArchive: () => get().unlockFloor("archive"),
+  lockArchive: () => get().lockFloor("archive"),
 }));

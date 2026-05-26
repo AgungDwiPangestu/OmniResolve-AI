@@ -152,7 +152,7 @@ langchain_pg_collection / langchain_pg_embedding  → vector store untuk RAG
 # LLM
 LLM_BASE_URL=https://api.sumopod.com/v1
 LLM_API_KEY=...
-LLM_MODEL_NAME=claude-3-haiku-20240307
+LLM_MODEL_NAME=glm-5
 
 # Database
 POSTGRES_HOST=postgres

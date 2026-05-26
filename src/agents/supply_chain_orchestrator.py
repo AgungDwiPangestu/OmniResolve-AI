@@ -121,6 +121,10 @@ async def supply_chain_orchestrator_node(state: GraphState) -> dict:
     elif decision["decision_type"] == "reject":
         actions_taken.append("Klaim ditolak — surat penjelasan disiapkan untuk pelanggan")
 
+    elif decision["decision_type"] == "multi_choice":
+        # No automated action — supervisor will approve and customer will pick a choice
+        actions_taken.append("Pilihan kompensasi disiapkan untuk pelanggan (menunggu HITL approval)")
+
     orchestrator_action: OrchestratorAction = {
         "actions_taken": actions_taken,
         "actions_failed": actions_failed,
@@ -134,6 +138,38 @@ async def supply_chain_orchestrator_node(state: GraphState) -> dict:
     customer_name = cp.get("customer_name", "Pelanggan")
     order_id = complaint.get("order_id", "N/A")
     complaint_desc = complaint.get("complaint_description", "")
+
+    # multi_choice: return clean structured response — skip LLM to avoid garbled "correction" text
+    if decision["decision_type"] == "multi_choice":
+        options_list = decision.get("options", [])
+        letters = ["A", "B", "C", "D"]
+        if options_list:
+            opts_text = "\n".join(
+                f"  *{letters[i]}.* {opt.get('label', opt.get('type', '?'))} — *Rp {opt.get('value', 0):,.0f}*"
+                for i, opt in enumerate(options_list[:4])
+            )
+            final_response = (
+                f"Yth. Bapak/Ibu {customer_name},\n\n"
+                f"Kami sangat memahami kekecewaan Anda atas pesanan {order_id}. "
+                f"Karena stok produk asli tidak tersedia dalam kondisi baik, "
+                f"kami menawarkan pilihan kompensasi berikut:\n\n"
+                f"📋 *Pilihan Anda:*\n{opts_text}\n\n"
+                f"Silakan balas dengan *A*, *B*, atau *C* untuk memilih. "
+                f"Tim kami siap membantu kapan saja."
+            )
+        else:
+            final_response = (
+                f"Yth. Bapak/Ibu {customer_name}, keluhan Anda sedang dalam proses persetujuan. "
+                f"Tim kami akan menghubungi Anda segera. (Ref: {session_id})"
+            )
+        broadcast_event("subagent_stop", session_id, {
+            "agent_id": "Supply Chain Orchestrator",
+            "message": "Multi-choice disiapkan, menunggu HITL approval."
+        })
+        return {
+            "orchestrator_action": orchestrator_action,
+            "final_response": final_response,
+        }
 
     response_context = f"""
 Nama Pelanggan: {customer_name}

@@ -7,33 +7,38 @@ import type { FloorConfig } from "@/types/navigation";
 import type { Session } from "@/hooks/useSessions";
 
 // ============================================================================
-// ARCHIVE FLOOR ROW (restricted access, different visual treatment)
+// RESTRICTED FLOOR ROW (archive, warehouse, boss_room — lock icon, no sessions)
 // ============================================================================
 
-interface ArchiveFloorRowProps {
+interface RestrictedFloorRowProps {
   floor: FloorConfig;
   onClick: (origin: { x: number; y: number }) => void;
 }
 
-function ArchiveFloorRow({ floor, onClick }: ArchiveFloorRowProps): React.ReactNode {
+function RestrictedFloorRow({ floor, onClick }: RestrictedFloorRowProps): React.ReactNode {
+  const badgeNum = floor.floorNumber < 0 ? `B${Math.abs(floor.floorNumber)}` : `${floor.floorNumber}F`;
   return (
     <button
       onClick={(e) => onClick({ x: e.clientX, y: e.clientY })}
       data-floor-id={floor.id}
-      className="group flex items-stretch w-full rounded-lg border border-dashed border-slate-700 bg-slate-950 hover:border-slate-500 hover:bg-slate-900 transition-all duration-200"
+      className="group flex items-stretch w-full rounded-lg border border-dashed hover:border-solid transition-all duration-200"
+      style={{ borderColor: floor.accent + "60", backgroundColor: floor.accent + "08" }}
     >
       {/* Floor number badge */}
-      <div className="flex items-center justify-center w-16 rounded-l-lg text-2xl font-bold font-mono text-slate-600 bg-slate-800/50">
-        B1
+      <div
+        className="flex items-center justify-center w-16 rounded-l-lg text-lg font-bold font-mono"
+        style={{ backgroundColor: floor.accent + "15", color: floor.accent + "aa" }}
+      >
+        {badgeNum}
       </div>
 
       {/* Floor info */}
       <div className="flex-grow flex items-center gap-4 px-5 py-4">
-        <span className="text-2xl grayscale opacity-70 group-hover:opacity-100 transition-opacity">
+        <span className="text-2xl opacity-70 group-hover:opacity-100 transition-opacity">
           {floor.icon}
         </span>
         <div className="flex flex-col items-start">
-          <span className="text-lg font-bold text-slate-400 group-hover:text-slate-200 transition-colors">
+          <span className="text-lg font-bold transition-colors" style={{ color: floor.accent + "cc" }}>
             {floor.name}
           </span>
           <span className="text-xs text-slate-600 font-mono tracking-widest uppercase">
@@ -49,6 +54,9 @@ function ArchiveFloorRow({ floor, onClick }: ArchiveFloorRowProps): React.ReactN
     </button>
   );
 }
+
+// Keep old name as alias for backward compat
+const ArchiveFloorRow = RestrictedFloorRow;
 
 // ============================================================================
 // FLOOR ROW
@@ -195,9 +203,10 @@ export function BuildingView({ sessions }: BuildingViewProps): React.ReactNode {
 
         {/* Floors sorted top-down by floor number (highest first) */}
         {sortedFloors.map((floor) => {
-          if (floor.floorType === "archive") {
+          const isRestricted = floor.floorType && floor.floorType !== "standard";
+          if (isRestricted) {
             return (
-              <ArchiveFloorRow
+              <RestrictedFloorRow
                 key={floor.id}
                 floor={floor}
                 onClick={(origin) => {

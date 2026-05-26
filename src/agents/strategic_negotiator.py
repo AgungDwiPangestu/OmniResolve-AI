@@ -13,7 +13,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.config import get_settings
 from src.graph.state import GraphState, CompensationDecision
-from src.tools.inventory_tools import get_customer_profile_by_order, check_inventory_status
+from src.tools.inventory_tools import get_customer_profile_by_order, check_inventory_status, find_similar_products
 from src.tools.vector_store import search_knowledge
 
 logger = structlog.get_logger(__name__)
@@ -43,14 +43,19 @@ SOP KEPUTUSAN QHOMEMART (SANGAT PENTING):
    - WAJIB berikan DUA OPSI dalam reasoning:
      A. "refund" 100% dari harga produk.
      B. "voucher" sebesar 110% dari harga produk (sebagai insentif agar tidak tarik uang).
+   - Jika tersedia produk alternatif sejenis, tambahkan OPSI C:
+     C. "alternative" — ganti dengan produk alternatif + voucher selisih harga (jika ada).
+       Gunakan data alternatif yang disediakan dalam konteks.
 5. BARANG TERLAMBAT (Late):
    - Berikan "voucher" senilai 10% dari harga barang. Jika keterlambatan > 5 hari, naikkan ke 15%.
 
 NILAI KOMPENSASI (compensation_value_idr):
-- Nilai ini harus mencerminkan TOTAL biaya finansial kompensasi yang diterima pelanggan secara jelas di telegram:
-  * Jika keputusan adalah "refund", maka nilai 'compensation_value_idr' WAJIB diisi sebesar: Harga Produk yang di-refund + Voucher Tambahan (jika berhak).
-  * Jika keputusan adalah "replacement", maka nilai 'compensation_value_idr' WAJIB diisi sebesar: Harga Produk pengganti + Voucher Tambahan (jika berhak).
-  * Jangan pernah hanya menuliskan nilai voucher tambahannya saja! Pelanggan akan bingung mengira barangnya dihargai sangat murah.
+- Nilai ini harus mencerminkan TOTAL biaya kompensasi FINANSIAL TAMBAHAN yang diberikan ke pelanggan:
+  * Jika keputusan adalah "refund": isi sebesar harga produk yang di-refund + voucher tambahan (jika berhak).
+  * Jika keputusan adalah "replacement": isi HANYA nilai kompensasi tambahan di luar penggantian barang.
+    - Penggantian barang (replacement) BUKAN kompensasi finansial — biaya ditanggung perusahaan, tidak dihitung di sini.
+    - compensation_value_idr untuk replacement = Rp 50.000 (voucher maaf) jika CLV tinggi, atau Rp 0 jika tidak.
+    - JANGAN isi dengan harga produk pengganti. Itu akan memicu eskalasi supervisor yang tidak perlu.
 
 OUTPUT FORMAT (JSON):
 {
@@ -68,7 +73,8 @@ ATURAN HITL:
 - Jika total nilai kompensasi (atau salah satu opsi) > Rp 1.000.000 → set requires_human_approval = true.
 
 LOGIKA LOYALITAS (CLV):
-- Jika CLV > 10jt, selalu tambahkan Voucher Loyalty Rp 200.000 di luar solusi utama.
+- Untuk keputusan "replacement": tambahkan Voucher Maaf Rp 50.000 jika CLV > 10jt (bukan Rp 200.000 — barang sudah diganti, 50k cukup sebagai goodwill).
+- Untuk keputusan "refund" atau "voucher": tambahkan Voucher Loyalty Rp 200.000 jika CLV > 10jt.
 - Gunakan bahasa yang sangat menghargai status loyalitas mereka."""
 
 
@@ -101,11 +107,34 @@ async def strategic_negotiator_node(state: GraphState) -> dict:
 
     # Ambil profil pelanggan berdasarkan order_id
     customer_profile = await get_customer_profile_by_order(complaint["order_id"])
-    
+
     # Ambil data produk untuk mengetahui harga
     inventory_data = await check_inventory_status(complaint["order_id"])
     product_price = inventory_data.get("price_idr", 0)
     product_name = inventory_data.get("product_name", "Tidak diketahui")
+    product_id = inventory_data.get("product_id", "")
+
+    # Cari produk alternatif jika stok habis
+    alternative_products: list[dict] = []
+    stock_status = audit.get("stock_status", "")
+    if stock_status in ("depleted", "damaged_in_warehouse") and product_price > 0:
+        # Ambil product_id dari inventory query
+        try:
+            from src.tools.inventory_tools import get_db_connection, normalize_order_id
+            conn = await get_db_connection()
+            row = await conn.fetchrow(
+                """SELECT p.product_id FROM orders o
+                   JOIN order_items oi ON o.order_id = oi.order_id
+                   JOIN products p ON oi.product_id = p.product_id
+                   WHERE o.order_id = $1 LIMIT 1""",
+                normalize_order_id(complaint["order_id"])
+            )
+            await conn.close()
+            if row:
+                product_id = row["product_id"]
+                alternative_products = await find_similar_products(product_id, product_price)
+        except Exception:
+            alternative_products = []
 
     decision_context = f"""
 KELUHAN PELANGGAN:
@@ -119,7 +148,9 @@ DATA PRODUK:
 - Nama Produk: {product_name}
 - Harga Produk (price_idr): Rp {product_price:,.0f}
 - Status Stok: {audit['stock_status']}
-
+{f'''
+PRODUK ALTERNATIF TERSEDIA (stok habis — tawarkan sebagai Opsi C):
+''' + chr(10).join(f"  - {a['product_name']} (Rp {a['price_idr']:,.0f}, stok {a['stock_available']}, ID: {a['product_id']})" for a in alternative_products) if alternative_products else ''}
 HASIL AUDIT:
 - Klaim Valid: {audit['claim_valid']}
 - Log Kurir: {audit['courier_log_summary']}
@@ -168,41 +199,68 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
 
         decision_type = result.get("decision_type", "reject")
         compensation_value = float(result.get("compensation_value_idr", 0.0))
+        options = result.get("options", [])
 
         # --- Programmatic Guardrails (Resolves Customer Request perfectly) ---
         desc_lower = (complaint.get("complaint_description") or "").lower()
         refund_keywords = ["refund", "dana kembali", "kembalikan uang", "kembalikan dana", "uang kembali", "tidak mau ganti", "sudah beli di tempat lain", "beli di toko lain"]
-        
+        customer_wants_refund = any(kw in desc_lower for kw in refund_keywords)
+
         # Guardrail 1: Force decision to refund if customer explicitly rejects replacement/requests refund
-        if any(kw in desc_lower for kw in refund_keywords):
+        if customer_wants_refund:
             if decision_type == "replacement":
                 logger.info("guardrail.override_decision_type", original=decision_type, new="refund")
                 decision_type = "refund"
-                
-        # Guardrail 2: Ensure compensation_value_idr reflects actual product price for refund/replacement
-        if decision_type in ("refund", "replacement") and product_price > 0:
+
+        # Guardrail 1.5: Force replacement when claim is valid and stock is available
+        # Prevents LLM from giving large vouchers (stock-out formula) for damage claims with available stock
+        STOCK_UNAVAILABLE = {"depleted", "damaged_in_warehouse", "out_of_stock"}
+        is_late_complaint = (complaint.get("complaint_type") or "").lower() == "late_delivery"
+        if (
+            audit.get("claim_valid", False)
+            and stock_status.lower() not in STOCK_UNAVAILABLE
+            and stock_status not in ("", "unknown")
+            and not customer_wants_refund
+            and not is_late_complaint
+            and decision_type not in ("replacement", "multi_choice")
+        ):
+            logger.info("guardrail.force_replacement_available_stock",
+                        original=decision_type, stock_status=stock_status)
+            decision_type = "replacement"
+            compensation_value = 50_000.0 if customer_profile.get("lifetime_value_idr", 0) > 10_000_000 else 0.0
+            options = []
+
+        # Guardrail 2: Correction untuk compensation_value_idr
+        if decision_type == "refund" and product_price > 0:
+            # Refund: nilai = harga produk + loyalty voucher jika CLV tinggi
             minimum_value = product_price
-            # If loyal customer (CLV > 10jt), add loyalty voucher Rp 200.000 (standard SOP)
             if customer_profile.get("lifetime_value_idr", 0) > 10_000_000:
                 minimum_value += 200_000.0
-            elif decision_type == "replacement" and any(w in desc_lower for w in ["rusak", "hancur", "pecah", "retak"]):
-                # User business rule: limit to Rp 50,000 discount voucher to avoid company loss
-                minimum_value += 50_000.0
-                
             if compensation_value < minimum_value:
                 logger.info("guardrail.override_compensation_value", original=compensation_value, new=minimum_value)
                 compensation_value = minimum_value
+        elif decision_type == "replacement":
+            # Replacement: nilai kompensasi = HANYA goodwill voucher (max 50k), BUKAN harga produk
+            if customer_profile.get("lifetime_value_idr", 0) > 10_000_000:
+                expected_value = 50_000.0
+            else:
+                expected_value = 0.0
+            if compensation_value > product_price * 0.1:
+                # LLM kemungkinan memasukkan harga produk, koreksi ke goodwill saja
+                logger.info("guardrail.override_replacement_value", original=compensation_value, new=expected_value)
+                compensation_value = expected_value
 
         # Check if any options exceed threshold
-        options = result.get("options", [])
         option_exceeds = any(float(opt.get("value", 0)) > settings.hitl_threshold_idr for opt in options)
-        
+
         # Guardrail 3: Force HITL approval if value exceeds the threshold
+        # multi_choice always requires HITL — prevents orchestrator from generating garbled responses
         requires_hitl = (
             result.get("requires_human_approval", False)
             or compensation_value > settings.hitl_threshold_idr
             or option_exceeds
             or (decision_type == "refund" and product_price > settings.hitl_threshold_idr)
+            or decision_type == "multi_choice"
         )
 
         decision: CompensationDecision = {
