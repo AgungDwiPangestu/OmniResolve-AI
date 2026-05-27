@@ -77,3 +77,4 @@ logs/
 node_modules/
 .next/
 out/
+CLAUDE.md
