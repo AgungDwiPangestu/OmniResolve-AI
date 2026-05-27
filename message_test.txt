@@ -17,6 +17,19 @@ CATATAN TEKNIS DATABASE
   HITL DIPICU   → total kompensasi > Rp 1.000.000 (threshold default)
   STOK HABIS    → warehouse_condition='depleted' atau stock_available=0
 
+STATUS DIPROSES (SUDAH ADA DI DB — TIDAK DIULANGI)
+-----------------------------------------------------
+  ORD-QHM-001 (CUST-001) → completed (replacement)
+  ORD-QHM-003 (CUST-003) → completed (voucher)
+  ORD-QHM-004 (CUST-004) → approved/HITL (replacement)
+  ORD-QHM-005 (CUST-005) → approved/HITL (refund)
+  ORD-QHM-008 (CUST-008) → completed (replacement)
+  ORD-QHM-013 (CUST-013) → completed (replacement)
+  ORD-QHM-014 (CUST-014) → completed (reject)
+  ORD-QHM-015 (CUST-015) → completed (reject)
+  ORD-QHM-016 (CUST-016) → approved/HITL (replacement)
+  ORD-QHM-065 (CUST-065) → approved/HITL (multi_choice)
+
 
 ================================================================================
  GRUP 1 — BARANG RUSAK SAAT TRANSIT (KLAIM VALID, NILAI < Rp 1 JUTA)
@@ -25,31 +38,224 @@ Kondisi DB: condition_on_pickup=intact, damage_reported_by_courier=TRUE
 Ekspektasi: Replacement + voucher Rp 50.000 — TANPA HITL
 --------------------------------------------------------------------------------
 
---- 1A: CUST-001 | Budi Hartono | ORD-QHM-001 | Granit Lantai Niro Granite | Rp 250.000 | Armada Qhomemart ---
+--- 1A: CUST-011 | Siti Rahmawati | ORD-QHM-011 | Kabel Roll Panasonic 10M | Rp 180.000 | J&T Express ---
 
-Halo tim Qhomemart, saya Budi Hartono pelanggan dengan ID CUST-001.
-Saya mau melapor bahwa pesanan granit lantai saya (Order ORD-QHM-001)
-sampai dalam kondisi beberapa keping pecah. Kurir Armada juga sudah
-mencatat kerusakan saat serah terima. Mohon bisa dikirim pengganti ya.
+Permisi, saya Siti Rahmawati.
+Kabel roll Panasonic 10 meter order ORD-QHM-011 via J&T
+baru saja saya terima tapi kondisinya rusak — kabelnya terjepit
+dan colokan utamanya retak. Ini jelas kena benturan saat pengiriman.
+Bisa saya minta penggantian unit baru? Terima kasih.
+
+---
+
+--- 1B: CUST-019 | Lilis Eko | ORD-QHM-019 | Cat Kayu & Besi FTALIT 1kg | Rp 75.000 | J&T Express ---
+
+Halo Qhomemart. Saya Lilis Eko.
+Cat kayu & besi FTALIT 1kg order ORD-QHM-019 via J&T
+sampai dengan kaleng penyok parah dan segelnya bocor.
+Catnya sudah keluar setengah. Mohon dikirim yang baru.
+
+---
+
+--- 1C: CUST-020 | Mega Setiawan | ORD-QHM-020 | Blender Philips HR2115 | Rp 650.000 | SiCepat ---
+
+Selamat pagi. Saya Mega Setiawan.
+Blender Philips HR2115 order ORD-QHM-020 via SiCepat baru datang
+tapi langsung saya lihat ada keretakan di badan blender dan
+waktu dicoba motornya tidak mau nyala. Kurir SiCepat sudah
+mencatat kerusakan saat serah terima. Mohon penggantian unit.
 Terima kasih.
 
 ---
 
---- 1B: CUST-013 | Eka Permata | ORD-QHM-013 | Bor Listrik Bosch GSB 550 | Rp 680.000 | JNE Trucking ---
+--- 1D: CUST-023 | Putri Amelia | ORD-QHM-023 | Wallpaper Dinding 3D Foam (Roll) | Rp 35.000 | GrabExpress ---
 
-Selamat siang. Nama saya Eka Permata, CUST-013.
-Bor listrik Bosch saya yang order ORD-QHM-013 via JNE baru tiba tapi
-dalam kondisi rusak — body-nya retak dan waktu dicoba tidak bisa menyala.
-Saya butuh unit yang baru untuk proyek renovasi saya. Bisa diproses
-penggantiannya? Terima kasih.
+Halo, ini Putri Amelia. Wallpaper 3D foam roll
+order ORD-QHM-023 via GrabExpress datang sobek panjang di
+tengahnya, tidak bisa dipakai sama sekali. Tolong ganti ya.
 
 ---
 
---- 1C: CUST-008 | Hendra Pratama | ORD-QHM-008 | Lampu LED Philips 12W Pack isi 4 | Rp 120.000 | Indah Logistik ---
+--- 1E: CUST-031 | Zainal Siregar | ORD-QHM-031 | Palu Kambing Tekiro 16 oz | Rp 75.000 | GrabExpress ---
 
-Bang, ini Hendra (CUST-008). Lampu LED Philips pack 4 biji
-order ORD-QHM-008 yang kemarin dateng via Indah Logistik
-isinya semua pecah-pecah kena benturan. Bisa minta ganti nggak?
+Salam, nama saya Zainal Siregar.
+Palu kambing Tekiro 16 oz order ORD-QHM-031 dikirim GrabExpress
+— begitu sampai kepala palunya sudah terlepas dari gagang.
+Saya curiga kena benturan keras saat pengiriman. Minta ganti unit.
+
+---
+
+--- 1F: CUST-032 | Ahmad Lubis | ORD-QHM-032 | Wastafel Gantung Toto | Rp 450.000 | Indah Logistik ---
+
+Permisi Qhomemart, saya Ahmad Lubis.
+Wastafel gantung Toto order ORD-QHM-032 via Indah Logistik
+tiba dalam kondisi retak di pinggiran bibir wastafel.
+Kurir sudah mencatat kerusakannya. Tolong kirim unit pengganti.
+
+---
+
+--- 1G: CUST-034 | Citra Nasution | ORD-QHM-034 | Rice Cooker Miyako 1.8L | Rp 280.000 | Dakota Cargo ---
+
+Halo tim Qhomemart. Nama saya Citra Nasution.
+Rice cooker Miyako 1.8L pesanan saya ORD-QHM-034 via Dakota Cargo
+sampai tapi tombol pengatur sudah patah dan bagian dalam panci
+retak. Tidak bisa dipakai. Mohon penggantian segera. Terima kasih.
+
+---
+
+--- 1H: CUST-037 | Fitri Harahap | ORD-QHM-037 | Mixer Cosmos Stand | Rp 350.000 | JNE Trucking ---
+
+Selamat sore Qhomemart. Saya Fitri Harahap.
+Mixer Cosmos Stand order ORD-QHM-037 via JNE baru datang tapi
+ada kerusakan di bagian mangkuk — retak besar dan kaki penyangga
+bengkok. Kurir JNE sudah mencatat kerusakan. Butuh unit pengganti.
+
+---
+
+--- 1I: CUST-038 | Guntur Pasaribu | ORD-QHM-038 | Setrika Listrik Philips HD1173 | Rp 295.000 | GoSend ---
+
+Bang admin, Guntur Pasaribu nih. Setrika Philips HD1173
+order ORD-QHM-038 via GoSend datengnya udah rusak — platnya penyok
+dan kabelnya putus di pangkal. Kurir udah catat waktu serah terima.
+Bisa minta ganti nggak?
+
+---
+
+--- 1J: CUST-040 | Iwan Pulungan | ORD-QHM-040 | Thinner Impala 1 Liter | Rp 35.000 | Indah Logistik ---
+
+Halo Qhomemart, saya Iwan Pulungan.
+Thinner Impala 1 liter order ORD-QHM-040 via Indah Logistik
+kalengnya penyok dan bocor — setengah isinya sudah tumpah.
+Kurir sudah dokumentasi kerusakannya. Mohon penggantian.
+
+---
+
+--- 1K: CUST-041 | Julia Hartono | ORD-QHM-041 | Kabel Antena TV Coaxial 15M | Rp 55.000 | Armada Qhomemart ---
+
+Halo, ini Julia Hartono. Kabel antena TV coaxial 15M
+order ORD-QHM-041 via Armada Qhomemart datang dalam kondisi
+kabel putus di bagian tengah dan konektor lepas. Jelas rusak
+saat pengiriman. Tolong ganti yang baru ya. Terima kasih.
+
+---
+
+--- 1L: CUST-043 | Lusi Setiawan | ORD-QHM-043 | Teflon Maxim 24cm | Rp 125.000 | J&T Express ---
+
+Permisi Qhomemart. Saya Lusi Setiawan.
+Teflon Maxim 24cm order ORD-QHM-043 via J&T Express tiba
+tapi lapisannya sudah mengelupas dan pegangannya bengkok.
+Kurir J&T sudah catat kerusakan. Minta penggantian unit.
+
+---
+
+--- 1M: CUST-044 | Maman Wijaya | ORD-QHM-044 | Gantungan Baju Kayu (Set isi 10) | Rp 48.000 | SiCepat ---
+
+Halo saya Maman Wijaya.
+Set gantungan baju kayu isi 10 order ORD-QHM-044 via SiCepat
+sampai dengan semua gantungan patah-patah, seperti kena injak.
+Kurir sudah catat kondisinya. Bisa minta ganti?
+
+---
+
+--- 1N: CUST-046 | Oscar Triyono | ORD-QHM-046 | Sapu Lantai Nilon Kurma | Rp 28.000 | GoSend ---
+
+Halo admin, Oscar Triyono di sini.
+Sapu lantai nilon Kurma order ORD-QHM-046 via GoSend datang
+dengan gagang patah jadi dua. Kurir GoSend sudah mencatat
+kerusakannya saat antar. Mohon kirim pengganti ya.
+
+---
+
+--- 1O: CUST-047 | Prima Marlina | ORD-QHM-047 | Selang Shower Toto 1.5 Meter | Rp 85.000 | GrabExpress ---
+
+Selamat pagi Qhomemart. Prima Marlina di sini.
+Selang shower Toto 1.5 meter order ORD-QHM-047 via GrabExpress
+tiba dalam kondisi retak di sambungan dan bocor saat dicoba.
+Ini sudah dicatat kurir saat serah terima. Mohon penggantian.
+
+---
+
+--- 1P: CUST-050 | Santi Susilo | ORD-QHM-050 | Rak Piring Aluminium 3 Susun | Rp 380.000 | Dakota Cargo ---
+
+Halo tim Qhomemart. Saya Santi Susilo.
+Rak piring aluminium 3 susun order ORD-QHM-050 via Dakota Cargo
+datang dalam kondisi rangka bengkok parah dan satu susun
+sudah lepas dari bautnya. Tidak bisa dipasang. Tolong ganti ya.
+
+---
+
+--- 1Q: CUST-052 | Ujang Nugroho | ORD-QHM-052 | Meja Kerja Minimalis | Rp 950.000 | SiCepat ---
+
+Halo Qhomemart. Ujang Nugroho mau lapor kerusakan.
+Meja kerja minimalis order ORD-QHM-052 via SiCepat tiba dengan
+kaki meja patah dua dan permukaan top table lecet parah.
+Kurir SiCepat sudah mendokumentasikan kerusakan. Nilai barang
+hampir 1 juta, tolong segera diproses penggantiannya.
+
+---
+
+--- 1R: CUST-053 | Vina Permata | ORD-QHM-053 | Meteran Tekiro 5 Meter | Rp 40.000 | JNE Trucking ---
+
+Salam, saya Vina Permata. Meteran Tekiro 5 meter
+order ORD-QHM-053 via JNE datang tapi penutup casing-nya
+pecah dan pita meterannya kusut tidak bisa ditarik.
+Kurir JNE mencatat kerusakan. Minta unit pengganti.
+
+---
+
+--- 1S: CUST-055 | Yuni Lestari | ORD-QHM-055 | Bak Cuci Piring Stainless Royal | Rp 450.000 | GrabExpress ---
+
+Halo Qhomemart, nama saya Yuni Lestari.
+Bak cuci piring stainless Royal order ORD-QHM-055 via GrabExpress
+tiba dalam kondisi penyok di bagian tengah bak — jelas akibat
+benturan pengiriman. Kurir sudah dokumentasi. Minta penggantian.
+
+---
+
+--- 1T: CUST-058 | Bella Utami | ORD-QHM-058 | Paku Kayu 3 Inch (1kg) | Rp 25.000 | Dakota Cargo ---
+
+Permisi, saya Bella Utami. Paku kayu 3 inch 1kg
+order ORD-QHM-058 via Dakota Cargo sampai dengan bungkus
+robek total dan pakunya berceceran hilang setengah.
+Kurir sudah catat kerusakannya. Mohon kirim yang baru.
+
+---
+
+--- 1U: CUST-059 | Candra Eko | ORD-QHM-059 | Pupuk Organik Cair 1 Liter | Rp 35.000 | J&T Express ---
+
+Halo admin, Candra Eko. Pupuk organik cair 1 liter
+order ORD-QHM-059 via J&T Express botolnya retak dan cairan
+pupuknya sudah tumpah habis. Isinya nol. Kurir J&T sudah
+catat kerusakannya. Minta penggantian ya.
+
+---
+
+--- 1V: CUST-061 | Edi Handayani | ORD-QHM-061 | Granit Lantai Niro Granite 60x60 (Dus) | Rp 250.000 | JNE Trucking ---
+
+Selamat pagi Qhomemart. Saya Edi Handayani.
+Granit lantai Niro Granite 60x60 (1 dus) order ORD-QHM-061
+via JNE Trucking tiba dengan beberapa keping granit pecah.
+Kurir JNE sudah mencatat kerusakan ini. Mohon segera dikirim
+pengganti ya. Terima kasih.
+
+---
+
+--- 1W: CUST-067 | Kiki Dari | ORD-QHM-067 | Keran Air Cabang Stainless | Rp 95.000 | J&T Express ---
+
+Halo Qhomemart. Kiki Dari mau komplain.
+Keran air cabang stainless order ORD-QHM-067 via J&T Express
+baru sampai tapi kondisinya rusak — kepala keran retak dan
+dratnya sudah tidak bundar. Kurir J&T sudah mendokumentasikan.
+Mohon kirim unit pengganti yang baru.
+
+---
+
+--- 1X: CUST-068 | Lia Saputra | ORD-QHM-068 | Lampu LED Philips 12W (Pack isi 4) | Rp 120.000 | SiCepat ---
+
+Hai tim Qhomemart, saya Lia Saputra.
+Lampu LED Philips 12W pack 4 biji order ORD-QHM-068 via SiCepat
+datang dengan 3 lampu pecah dan 1 retak. Semua tidak bisa dipakai.
+Kurir SiCepat sudah catat ini. Tolong kirim pengganti ya.
 
 
 ================================================================================
@@ -61,33 +267,16 @@ Ekspektasi: AI rekomendasikan replacement, tapi nilai > Rp 1jt
             → Status percakapan: ESCALATED (menunggu persetujuan)
 --------------------------------------------------------------------------------
 
---- 2A: CUST-004 | Rina Wijaya | ORD-QHM-004 | Kloset Duduk Toto Eco Washer | Rp 2.400.000 | SiCepat ---
+--- 2A: CUST-064 | Hesti Hidayat | ORD-QHM-064 | Kloset Duduk Toto Eco Washer CW421J | Rp 2.400.000 | Indah Logistik ---
 
-Selamat pagi Qhomemart. Saya Rina Wijaya, customer ID CUST-004.
-Saya sangat kecewa karena kloset duduk Toto yang saya pesan
-(Order ORD-QHM-004, dikirim via SiCepat) tiba dalam kondisi retak
-di bagian dudukannya. Kondisinya sudah seperti ini bahkan sebelum
-dipasang. Saya butuh penggantian unit yang baru dan utuh.
-Mohon segera ditangani karena renovasi kamar mandi saya terhambat.
-
----
-
---- 2B: CUST-016 | Hadi Dwi | ORD-QHM-016 | Kitchen Sink Blanco Stainless | Rp 1.850.000 | Indah Logistik ---
-
-Permisi, nama saya Hadi Dwi (CUST-016). Kitchen sink Blanco
-order ORD-QHM-016 saya sudah tiba tapi ada kerusakan di bagian
-bak sink-nya — penyok parah akibat pengiriman Indah Logistik.
-Kondisi ini jelas tidak bisa dipakai. Saya minta unit pengganti
-yang baru secepatnya. Tolong diproses ya.
-
----
-
---- 2C: CUST-065 | Indra Ningsih | ORD-QHM-065 | Sofa Minimalis L-Shape Fabric | Rp 5.500.000 | Armada Qhomemart ---
-
-HALO INI INDRA NINGSIH CUST-065!! SOFA L-SHAPE SAYA YANG ORD-QHM-065
-SAMPAI DALAM KONDISI RUSAK PARAH!! RANGKANYA BENGKOK DAN KAINNYA
-SOBEK!! INI HARGANYA 5,5 JUTA DAN KONDISINYA SEPERTI BARANG BEKAS!!
-TOLONG GANTI SEKARANG JUGA!! TIDAK BISA DITOLERIR!!
+Selamat pagi tim Qhomemart. Nama saya Hesti Hidayat.
+Saya ingin melaporkan kerusakan pada kloset duduk Toto Eco Washer
+CW421J order ORD-QHM-064 yang dikirim via Indah Logistik.
+Barang tiba dengan dudukan retak parah dan tangki air bocor.
+Kurir sudah mencatat kerusakan ini saat serah terima.
+Nilai produk 2.4 juta dan kondisinya tidak bisa dipakai sama sekali.
+Mohon segera diproses penggantian unitnya. Renovasi kamar mandi saya
+terhambat karenanya. Terima kasih.
 
 
 ================================================================================
@@ -98,20 +287,9 @@ Ekspektasi: AI audit menunjukkan tidak ada bukti kerusakan dari logistik
             → Klaim DITOLAK (reject), pelanggan diberi penjelasan tertulis
 --------------------------------------------------------------------------------
 
---- 3A: CUST-014 | Fajar Syahputra | ORD-QHM-014 | Kipas Angin Stand Miyako | Rp 250.000 | GoSend ---
+--- 3A: CUST-006 | Bambang Triyono | ORD-QHM-006 | Cat Tembok Dulux Catylac 5kg | Rp 320.000 | GoSend ---
 
-Halo, saya Fajar Syahputra (CUST-014). Kipas Angin Stand Miyako
-pesanan saya dengan order ORD-QHM-014 baru saja sampai kemarin
-lewat GoSend. Tapi begitu dirakit dan dinyalakan, ternyata leher
-kipasnya patah akibat guncangan pengiriman kargo dan baling-balingnya
-tidak mau berputar sama sekali. Tolong kirim unit pengganti yang baru.
-Terima kasih.
-
----
-
---- 3B: CUST-006 | Bambang Triyono | ORD-QHM-006 | Cat Tembok Dulux Catylac 5kg | Rp 160.000 | GoSend ---
-
-Selamat sore, saya Bambang Triyono pelanggan ID CUST-006.
+Selamat sore, saya Bambang Triyono.
 Cat tembok Dulux yang saya pesan via order ORD-QHM-006
 sampai dengan kaleng penyok dan cat bocor ke dalam kardus.
 Produknya jadi tidak bisa dipakai. Mohon penggantian.
@@ -119,19 +297,104 @@ Terima kasih.
 
 ---
 
+--- 3B: CUST-007 | Lina Marlina | ORD-QHM-007 | Keran Air Cabang Stainless | Rp 95.000 | GrabExpress ---
+
+Halo Qhomemart. Saya Lina Marlina.
+Keran air cabang stainless yang saya pesan order ORD-QHM-007
+via GrabExpress baru tiba tapi kepala kerannya sudah longgar
+dan bocor waktu dipasang. Ini pasti rusak dari pengiriman.
+Minta penggantian unit yang baru ya. Terima kasih.
+
+---
+
 --- 3C: CUST-010 | Andi Susilo | ORD-QHM-010 | Meja Makan Kayu Jati Minimalis | Rp 3.500.000 | Dakota Cargo ---
 
-Halo Qhomemart. Saya Andi Susilo (CUST-010). Meja makan kayu
+Halo Qhomemart. Saya Andi Susilo. Meja makan kayu
 jati order ORD-QHM-010 lewat Dakota Cargo sampai dengan salah
 satu kaki meja patah. Ini jelas cacat produksi atau rusak saat
 pengiriman. Nilai barang hampir 3,5 juta, tolong ganti unit baru.
 Saya tunggu responnya.
 
+---
+
+--- 3D: CUST-022 | Oki Hidayat | ORD-QHM-022 | Stop Kontak Broco 4 Lubang | Rp 85.000 | GoSend ---
+
+Halo admin Qhomemart, saya Oki Hidayat.
+Stop kontak Broco 4 lubang order ORD-QHM-022 via GoSend
+sudah sampai tapi ketika dicoba di-colokin tidak ada yang
+berfungsi. Selain itu body-nya ada yang retak di bagian sudut.
+Tolong kirim pengganti yang baru ya.
+
+---
+
+--- 3E: CUST-025 | Siska Ningsih | ORD-QHM-025 | Jet Shower Closet Toto | Rp 195.000 | Armada Qhomemart ---
+
+Permisi tim Qhomemart. Saya Siska Ningsih.
+Jet shower closet Toto order ORD-QHM-025 via Armada Qhomemart
+sudah diterima tapi waktu dipasang tekanan airnya sangat lemah
+dan ada bagian yang retak di bagian selang. Ini seperti sudah
+rusak sebelum sampai ke saya. Mohon penggantian segera.
+
+---
+
+--- 3F: CUST-028 | Vicky Saputra | ORD-QHM-028 | Selang Air Anti Tekuk 15 Meter | Rp 110.000 | SiCepat ---
+
+Halo, ini Vicky Saputra. Selang air anti tekuk 15M
+order ORD-QHM-028 via SiCepat datang tapi ada bagian yang
+sobek dan bocor. Waktu dicoba langsung keluar air dari sobekan.
+Tolong diproses penggantiannya ya. Terima kasih.
+
+---
+
+--- 3G: CUST-029 | Wulan Wulandari | ORD-QHM-029 | Tang Kombinasi Tekiro 7 Inch | Rp 55.000 | JNE Trucking ---
+
+Selamat siang. Wulan Wulandari mau komplain.
+Tang kombinasi Tekiro 7 inch order ORD-QHM-029 via JNE
+datang dan waktu pertama kali dicoba gagangnya langsung patah.
+Ini jelas produk cacat. Minta penggantian unit baru.
+
+---
+
+--- 3H: CUST-035 | Dedi Pane | ORD-QHM-035 | Pot Bunga Keramik Putih | Rp 65.000 | J&T Express ---
+
+Halo Qhomemart, saya Dedi Pane. Pot bunga keramik
+putih order ORD-QHM-035 via J&T Express sampai sudah pecah
+di bagian pinggir atas. Minta penggantian yang utuh ya.
+
+---
+
+--- 3I: CUST-049 | Rudi Aminah | ORD-QHM-049 | Gergaji Kayu Tekiro 18 Inch | Rp 68.000 | Armada Qhomemart ---
+
+Halo, saya Rudi Aminah.
+Gergaji kayu Tekiro 18 inch order ORD-QHM-049 via Armada
+tiba tapi gigi gergajinya sudah bengkok-bengkok dan mata
+gergajinya tumpul. Tidak bisa dipakai untuk motong kayu sama sekali.
+Tolong ganti unit baru. Terima kasih.
+
+---
+
+--- 3J: CUST-056 | Zaki Dwi | ORD-QHM-056 | Lukisan Dinding Canvas Modern | Rp 180.000 | Indah Logistik ---
+
+Permisi Qhomemart. Zaki Dwi di sini.
+Lukisan dinding canvas modern order ORD-QHM-056 via Indah Logistik
+tiba dengan frame bengkok dan canvas-nya robek di sudut.
+Tidak bisa dipasang di dinding. Minta penggantian segera.
+
+---
+
+--- 3K: CUST-070 | Novi Gunawan | ORD-QHM-070 | Meja Makan Kayu Jati Minimalis | Rp 3.500.000 | GoSend ---
+
+Halo tim Qhomemart. Saya Novi Gunawan.
+Meja makan kayu jati minimalis order ORD-QHM-070 via GoSend
+baru datang tapi ada 2 kaki meja yang retak di bagian sambungan.
+Nilai barang 3.5 juta, tidak bisa diterima kondisi seperti ini.
+Tolong segera kirim unit pengganti yang baru. Terima kasih.
+
 
 ================================================================================
- GRUP 4 — STOK HABIS, BARANG BELUM DIKIRIM (MULTI-CHOICE: REFUND vs VOUCHER)
+ GRUP 4 — STOK HABIS, BARANG BELUM/SUDAH DIKIRIM (MULTI-CHOICE: REFUND vs VOUCHER)
 ================================================================================
-Kondisi DB: warehouse_condition='depleted' atau stock_available=0, order pending
+Kondisi DB: warehouse_condition='depleted' atau stock_available=0
 Ekspektasi: AI menawarkan 2 opsi kepada pelanggan:
             Opsi 1 → Refund penuh 100% harga produk
             Opsi 2 → Voucher belanja 110% (lebih untung dari refund)
@@ -140,11 +403,23 @@ Ekspektasi: AI menawarkan 2 opsi kepada pelanggan:
 
 --- 4A: CUST-999 | Pelanggan Baru | ORD-QHM-002 | Semen Instan Mortar Utama 40kg | Rp 85.000 | Belum dikirim ---
 
-Halo, saya pelanggan baru dengan ID CUST-999.
-Saya sudah bayar semen mortar utama order ORD-QHM-002
+Halo, saya ingin menanyakan pesanan saya.
+Semen mortar utama 40kg order ORD-QHM-002 sudah saya bayar
 tapi sampai sekarang belum ada kabar pengirimannya sama sekali.
 Sudah lebih dari seminggu. Tolong dicek statusnya.
 Apakah barangnya akan dikirim atau tidak?
+
+---
+
+--- 4B: CUST-062 | Fani Hidayat | ORD-QHM-062 | Semen Instan Mortar Utama 40kg | Rp 85.000 | GoSend ---
+(⚠️ Khusus: sudah dikirim + rusak saat transit, tapi stok gudang depleted → tidak bisa kirim ulang)
+
+Halo Qhomemart, nama saya Fani Hidayat.
+Semen mortar utama 40kg order ORD-QHM-062 via GoSend sudah
+datang tapi kondisinya sudah basah dan mengeras semua — karung
+semen robek kena benturan selama pengiriman. Kurir GoSend sudah
+catat kerusakannya. Saya butuh penggantinya untuk proyek saya.
+Tolong segera diproses ya.
 
 
 ================================================================================
@@ -155,22 +430,9 @@ Ekspektasi: Guardrail AI aktif → keputusan di-override ke 'refund'
             Jika nilai > Rp 1jt → tetap trigger HITL sekaligus
 --------------------------------------------------------------------------------
 
---- 5A: CUST-005 | Dian Sasmita | ORD-QHM-005 | Sofa Minimalis L-Shape | Rp 5.500.000 | JNE Trucking ---
+--- 5A: CUST-017 | Indah Suryani | ORD-QHM-017 | Shower Column Set Toto | Rp 3.200.000 | Armada Qhomemart ---
 
-Kepada Tim Qhomemart,
-Saya Dian Sasmita. Sofa L-Shape fabric order ORD-QHM-005
-yang dikirim via JNE Trucking sampai dalam kondisi rusak berat —
-rangka patah dan kain robek di beberapa titik.
-Saya sudah TIDAK MAU penggantian unit lagi karena saya sudah
-terlanjur membeli sofa pengganti di toko lain karena butuh segera.
-Saya hanya minta PENGEMBALIAN DANA (refund) penuh saja.
-Mohon segera diproses. Terima kasih.
-
----
-
---- 5B: CUST-017 | Indah Suryani | ORD-QHM-017 | Shower Column Set Toto | Rp 3.200.000 | Armada Qhomemart ---
-
-Siang tim Qhomemart. Indah Suryani di sini, CUST-017.
+Siang tim Qhomemart. Indah Suryani di sini.
 Shower column Toto order ORD-QHM-017 via Armada sudah sampai
 tapi rusak — shower head-nya patah dan selang bocor.
 Tolong kembalikan uang saya saja ya, tidak perlu kirim ganti.
@@ -186,19 +448,9 @@ Ekspektasi: AI validasi sebagai wrong_item → kirim ulang produk benar
             + voucher maaf Rp 50.000 (tanpa HITL jika harga < Rp 1jt)
 --------------------------------------------------------------------------------
 
---- 6A: CUST-003 | Agus Setiawan | ORD-QHM-003 | Rak Dinding Minimalis Kayu | Rp 150.000 | J&T Express ---
+--- 6A: CUST-026 | Taufik Prasetyo | ORD-QHM-026 | Kompor Gas Rinnai 2 Tungku | Rp 420.000 | Dakota Cargo ---
 
-Permisi, saya Agus Setiawan pelanggan ID CUST-003.
-Pesanan rak dinding minimalis kayu saya (ORD-QHM-003) sudah datang
-via J&T, tapi yang dikirim bukan rak yang saya pesan — ukurannya
-berbeda, yang datang ukuran kecil padahal saya pesan ukuran standar.
-Ini jelas salah kirim. Tolong segera kirim produk yang benar.
-
----
-
---- 6B: CUST-026 | Taufik Prasetyo | ORD-QHM-026 | Kompor Gas Rinnai 2 Tungku | Rp 420.000 | Dakota Cargo ---
-
-Halo, Taufik Prasetyo nih (CUST-026). Kompor gas Rinnai 2 tungku
+Halo, Taufik Prasetyo nih. Kompor gas Rinnai 2 tungku
 order ORD-QHM-026 yang datang via Dakota Cargo bukan tipe yang saya
 pesan — yang saya terima kompor 1 tungku, padahal di pesanan jelas
 2 tungku. Mohon kirimkan yang benar sesuai pesanan ya.
@@ -223,7 +475,7 @@ mahal untuk produk ini. Tolong ganti sekarang.
 
 --- 7B: CUST-001 mengklaim order milik pelanggan lain ---
 
-Halo ini Budi Hartono CUST-001. Sofa saya order ORD-QHM-005
+Halo ini Budi Hartono. Sofa saya order ORD-QHM-005
 yang saya pesan bulan lalu sampai rusak. Tolong ganti ya.
 
 (⚠️  Catatan: ORD-QHM-005 milik CUST-005/Dian Sasmita, bukan Budi.
@@ -231,11 +483,9 @@ yang saya pesan bulan lalu sampai rusak. Tolong ganti ya.
 
 
 ================================================================================
- GRUP 8 — PELANGGAN LOYAL (CLV > Rp 10 JUTA) + KLAIM RUSAK TIDAK TERBUKTI
+ GRUP 8 — PELANGGAN LOYAL (is_loyal=TRUE) + KLAIM TIDAK TERBUKTI
 ================================================================================
 Kondisi DB: is_loyal=TRUE, tapi condition_on_pickup=intact + damage=FALSE
-CATATAN PENTING: Semua pelanggan loyal di database memiliki rekam pengiriman
-bersih. Ini skenario di mana loyalitas tidak cukup untuk menggantikan bukti.
 Ekspektasi: AI tetap menolak klaim karena audit logistik tidak mendukung,
             meski bahasa respons lebih halus/penuh penghargaan untuk pelanggan setia
 --------------------------------------------------------------------------------
@@ -243,9 +493,9 @@ Ekspektasi: AI tetap menolak klaim karena audit logistik tidak mendukung,
 --- 8A: CUST-009 | Dewi Aminah | ORD-QHM-009 | Water Heater Ariston 15L | Rp 2.250.000 | Armada Qhomemart ---
      (is_loyal=TRUE, CLV Rp 141 juta — pelanggan setia premium)
 
-Selamat pagi Qhomemart. Ini Dewi Aminah, pelanggan setia kalian
-dengan ID CUST-009. Saya sudah berbelanja puluhan juta rupiah
-di sini dan ini pertama kalinya saya komplain.
+Selamat pagi Qhomemart. Ini Dewi Aminah, pelanggan setia kalian.
+Saya sudah berbelanja puluhan juta rupiah di sini dan ini
+pertama kalinya saya komplain.
 Water heater Ariston 15L order ORD-QHM-009 yang baru saya terima
 ternyata tidak mau menyala sama sekali — elemen pemanasnya sepertinya
 rusak atau cacat dari pabrik. Sudah saya coba berbagai cara.
@@ -254,14 +504,206 @@ selama ini. Harapkan penggantian unit yang baik.
 
 ---
 
---- 8B: CUST-039 | Hany Pohan | ORD-QHM-039 | Gunting Dahan Tekiro | Rp 85.000 | GrabExpress ---
+--- 8B: CUST-012 | Joko Nugroho | ORD-QHM-012 | Semen Tiga Roda 40kg | Rp 195.000 | SiCepat ---
+     (is_loyal=TRUE, CLV Rp 65.9 juta)
+
+Halo Qhomemart, saya Joko Nugroho, pelanggan setia di sini.
+Semen Tiga Roda 40kg order ORD-QHM-012 via SiCepat tiba tapi
+karungnya sudah robek di bawah dan semennya tumpah sebagian.
+Saya sudah lama belanja di Qhomemart, tolong diproses
+penggantiannya ya. Terima kasih.
+
+---
+
+--- 8C: CUST-018 | Kurniawan Utami | ORD-QHM-018 | Kuas Cat Nippon Paint 3 Inch | Rp 15.000 | Dakota Cargo ---
+     (is_loyal=TRUE, CLV Rp 49.2 juta)
+
+Halo admin, saya Kurniawan Utami.
+Kuas cat Nippon Paint 3 inch order ORD-QHM-018 via Dakota Cargo
+sudah datang tapi bulunya sudah rontok separuh dan gagangnya
+retak. Saya pelanggan lama Qhomemart, tolong bantu ya.
+
+---
+
+--- 8D: CUST-021 | Novianto Handayani | ORD-QHM-021 | Obeng Set Kenmaster 31 in 1 | Rp 45.000 | JNE Trucking ---
+     (is_loyal=TRUE, CLV Rp 110.7 juta)
+
+Selamat pagi. Novianto Handayani di sini.
+Obeng set Kenmaster 31 in 1 order ORD-QHM-021 via JNE sudah
+tiba tapi beberapa mata obengnya sudah tumpul dan casingnya
+retak. Saya sudah jadi pelanggan setia Qhomemart cukup lama,
+mohon bisa dibantu penggantian. Terima kasih.
+
+---
+
+--- 8E: CUST-024 | Rian Hidayat | ORD-QHM-024 | Lemari Pakaian Plastik Club 4 Susun | Rp 280.000 | Indah Logistik ---
+     (is_loyal=TRUE, CLV Rp 40.6 juta)
+
+Hai Qhomemart, Rian Hidayat di sini.
+Lemari pakaian plastik Club 4 susun order ORD-QHM-024 via Indah Logistik
+tiba tapi 2 laci paling bawah sudah retak dan tidak bisa dipasang.
+Saya pelanggan setia Qhomemart, harap bisa diproses penggantiannya.
+
+---
+
+--- 8F: CUST-027 | Utami Dari | ORD-QHM-027 | Keramik Lantai Mulia 40x40 (Dus) | Rp 60.000 | J&T Express ---
+     (is_loyal=TRUE, CLV Rp 128.7 juta)
+
+Permisi Qhomemart. Saya Utami Dari.
+Keramik lantai Mulia 40x40 (1 dus) order ORD-QHM-027 via J&T
+sampai dengan beberapa keping sudah pecah di dalam dus.
+Mengingat saya sudah lama berbelanja di Qhomemart, mohon
+bisa diprioritaskan penggantiannya. Terima kasih.
+
+---
+
+--- 8G: CUST-030 | Yanto Gunawan | ORD-QHM-030 | Saklar Lampu Panasonic Single | Rp 18.000 | GoSend ---
+     (is_loyal=TRUE, CLV Rp 123.9 juta)
+
+Halo admin, Yanto Gunawan nih. Saklar lampu
+Panasonic single order ORD-QHM-030 via GoSend sudah sampai
+tapi pas dipasang langsung konslet. Saya sudah lama jadi
+pelanggan Qhomemart. Bisa minta ganti yang baru?
+
+---
+
+--- 8H: CUST-033 | Bayu Tanjung | ORD-QHM-033 | Dempul Kayu Isamu 1kg | Rp 45.000 | Armada Qhomemart ---
+     (is_loyal=TRUE, CLV Rp 35.9 juta)
+
+Halo Qhomemart, saya Bayu Tanjung.
+Dempul kayu Isamu 1kg order ORD-QHM-033 via Armada Qhomemart
+tiba tapi tutupnya sudah terlepas dan dempulnya mengeras total
+tidak bisa dipakai. Saya sudah cukup lama belanja di Qhomemart.
+Tolong bantu proses penggantian ya.
+
+---
+
+--- 8I: CUST-036 | Erna Batubara | ORD-QHM-036 | Kunci Inggris Tekiro 10 Inch | Rp 115.000 | SiCepat ---
+     (is_loyal=TRUE, CLV Rp 49.9 juta)
+
+Selamat pagi. Erna Batubara di sini. Kunci inggris
+Tekiro 10 inch order ORD-QHM-036 via SiCepat tiba tapi
+engsel pengaturnya sudah macet total tidak bisa diputar.
+Saya pelanggan setia Qhomemart, mohon bisa dibantu penggantian.
+
+---
+
+--- 8J: CUST-039 | Hany Pohan | ORD-QHM-039 | Gunting Dahan Tekiro | Rp 85.000 | GrabExpress ---
      (is_loyal=TRUE, CLV Rp 102 juta)
 
-Hai admin, saya Hany Pohan (CUST-039). Gunting dahan Tekiro
+Hai admin, saya Hany Pohan. Gunting dahan Tekiro
 order ORD-QHM-039 saya pesan untuk berkebun tapi waktu dicoba
 langsung patah di bagian engsel-nya. Ini cacat produk.
 Padahal saya sudah lama jadi pelanggan Qhomemart loh.
 Boleh minta ganti?
+
+---
+
+--- 8K: CUST-042 | Koko Dewi | ORD-QHM-042 | Kursi Kantor Ergonomis | Rp 850.000 | Dakota Cargo ---
+     (is_loyal=TRUE, CLV Rp 2 juta)
+
+Halo Qhomemart. Saya Koko Dewi. Kursi kantor ergonomis
+order ORD-QHM-042 via Dakota Cargo sampai tapi sandaran kursinya
+langsung goyah dan roda-rodanya copot 2. Tidak nyaman dipakai.
+Saya pelanggan setia Qhomemart, mohon diproses penggantian ya.
+
+---
+
+--- 8L: CUST-045 | Nina Sasmita | ORD-QHM-045 | Sekop Mini Taman Stainless | Rp 35.000 | JNE Trucking ---
+     (is_loyal=TRUE, CLV Rp 39.6 juta)
+
+Permisi, saya Nina Sasmita. Sekop mini taman stainless
+order ORD-QHM-045 via JNE tiba tapi gagangnya sudah bengkok dan
+bagian ujungnya patah. Saya loyal customer Qhomemart.
+Bisa minta penggantian unit yang bagus?
+
+---
+
+--- 8M: CUST-048 | Qori Pratama | ORD-QHM-048 | Bohlam LED Philips 19W | Rp 95.000 | Indah Logistik ---
+     (is_loyal=TRUE, CLV Rp 81 juta)
+
+Halo Qhomemart. Qori Pratama mau melaporkan masalah.
+Bohlam LED Philips 19W order ORD-QHM-048 via Indah Logistik
+sampai tapi saat dipasang tidak mau nyala sama sekali.
+Saya sudah lama jadi pelanggan setia di sini.
+Tolong kirim pengganti yang berfungsi ya.
+
+---
+
+--- 8N: CUST-051 | Teguh Rahmawati | ORD-QHM-051 | Pel Set Alat Pel Spin Mop | Rp 195.000 | J&T Express ---
+     (is_loyal=TRUE, CLV Rp 95 juta)
+
+Selamat siang Qhomemart. Teguh Rahmawati di sini.
+Pel set spin mop order ORD-QHM-051 via J&T Express sudah tiba
+tapi tongkat pel-nya retak di bagian sambungan dan ember
+spin-nya penyok tidak bisa diputar. Saya pelanggan setia
+Qhomemart, tolong dibantu penggantian ya. Terima kasih.
+
+---
+
+--- 8O: CUST-054 | Wawan Syahputra | ORD-QHM-054 | Fitting Lampu Panasonic Gantung | Rp 12.000 | GoSend ---
+     (is_loyal=TRUE, CLV Rp 60.4 juta)
+
+Halo, Wawan Syahputra. Fitting lampu Panasonic gantung
+order ORD-QHM-054 via GoSend sampai tapi socket dalamnya sudah
+retak dan tidak bisa dipasang bohlam. Saya pelanggan lama.
+Minta ganti yang baru ya.
+
+---
+
+--- 8P: CUST-057 | Adit Suryani | ORD-QHM-057 | Tempat Sampah Injak 10L Plastik | Rp 45.000 | Armada Qhomemart ---
+     (is_loyal=TRUE, CLV Rp 129.7 juta)
+
+Halo Qhomemart. Adit Suryani di sini.
+Tempat sampah injak 10L plastik order ORD-QHM-057 via Armada
+tiba tapi injakan pedalnya sudah patah dan tutupnya tidak
+bisa menutup rapat. Saya sudah lama berbelanja di Qhomemart.
+Mohon bisa dibantu penggantian ya.
+
+---
+
+--- 8Q: CUST-060 | Dina Setiawan | ORD-QHM-060 | Dispenser Miyako Hot & Normal | Rp 185.000 | SiCepat ---
+     (is_loyal=TRUE, CLV Rp 119.4 juta)
+
+Selamat pagi. Dina Setiawan mau melaporkan.
+Dispenser Miyako hot & normal order ORD-QHM-060 via SiCepat
+sudah diterima tapi tombol hot-nya rusak dan airnya tidak
+bisa panas sama sekali. Saya pelanggan setia Qhomemart
+yang sudah bertahun-tahun belanja di sini. Mohon penggantian.
+
+---
+
+--- 8R: CUST-063 | Gilang Amelia | ORD-QHM-063 | Rak Dinding Minimalis Kayu | Rp 150.000 | GrabExpress ---
+     (is_loyal=TRUE, CLV Rp 82.4 juta)
+
+Hai Qhomemart. Gilang Amelia di sini.
+Rak dinding minimalis kayu order ORD-QHM-063 via GrabExpress
+sudah sampai tapi kayunya retak di tengah dan baut-bautnya
+sudah tidak pas. Tidak bisa dipasang ke dinding.
+Saya pelanggan setia Qhomemart, mohon dibantu penggantian ya.
+
+---
+
+--- 8S: CUST-066 | Joni Prasetyo | ORD-QHM-066 | Cat Tembok Dulux Catylac Putih 5kg | Rp 160.000 | Dakota Cargo ---
+     (is_loyal=TRUE, CLV Rp 66.7 juta)
+
+Halo Qhomemart. Joni Prasetyo di sini. Cat tembok
+Dulux Catylac putih 5kg order ORD-QHM-066 via Dakota Cargo
+kalengnya penyok dan segelnya sudah bocor waktu sampai.
+Cat kena udara luar dan sudah mengeras setengah.
+Saya pelanggan loyal Qhomemart, tolong diproses penggantian ya.
+
+---
+
+--- 8T: CUST-069 | Mita Wulandari | ORD-QHM-069 | Water Heater Ariston 15L | Rp 2.250.000 | JNE Trucking ---
+     (is_loyal=TRUE, CLV Rp 17.8 juta)
+
+Selamat pagi tim Qhomemart. Nama saya Mita Wulandari.
+Water heater Ariston 15L order ORD-QHM-069 via JNE Trucking
+baru saya terima tapi sama sekali tidak mau menyala. Sudah
+saya cek instalasi listriknya normal. Sepertinya ada kerusakan
+pada elemen pemanas. Nilai produk 2.25 juta dan saya sudah
+jadi pelanggan Qhomemart. Mohon diproses penggantian unitnya.
 
 
 ================================================================================
@@ -296,27 +738,72 @@ Saya lagi mau belanja tapi bingung mau keluar atau tidak.
  RINGKASAN CEPAT — UNTUK PENGUJIAN EFISIEN
 ================================================================================
 
-SKENARIO             | CUST   | ORDER       | PRODUK                  | HASIL EKSPEKTASI
----------------------|--------|-------------|-------------------------|---------------------------
-Rusak transit < 1jt  | 001    | ORD-QHM-001 | Granit Lantai Niro      | Replacement + voucher 50rb
-Rusak transit < 1jt  | 013    | ORD-QHM-013 | Bor Listrik Bosch       | Replacement + voucher 50rb
-Rusak transit < 1jt  | 008    | ORD-QHM-008 | Lampu LED Philips       | Replacement + voucher 50rb
-Rusak mahal + HITL   | 004    | ORD-QHM-004 | Kloset Toto 2.4jt       | HITL (email supervisor)
-Rusak mahal + HITL   | 016    | ORD-QHM-016 | Kitchen Sink 1.85jt     | HITL (email supervisor)
-Rusak mahal + HITL   | 065    | ORD-QHM-065 | Sofa 5.5jt              | HITL (email supervisor)
-Klaim tidak terbukti | 014    | ORD-QHM-014 | Kipas Angin Miyako      | REJECT
-Klaim tidak terbukti | 006    | ORD-QHM-006 | Cat Tembok Dulux        | REJECT
-Klaim tidak terbukti | 010    | ORD-QHM-010 | Meja Makan Jati 3.5jt   | REJECT
-Stok habis           | 999    | ORD-QHM-002 | Semen Instan            | Multi-choice (1/2)
-Minta refund ekspl.  | 005    | ORD-QHM-005 | Sofa 5.5jt (refund)     | Refund + HITL
-Minta refund ekspl.  | 017    | ORD-QHM-017 | Shower Set 3.2jt        | Refund + HITL
-Salah kirim          | 003    | ORD-QHM-003 | Rak Dinding Kayu        | Replacement kirim ulang
-Salah kirim          | 026    | ORD-QHM-026 | Kompor Gas Rinnai       | Replacement kirim ulang
-Order fiktif         | -      | ORD-QHM-999 | -                       | REJECT (tidak ditemukan)
-Data mismatch        | 001    | ORD-QHM-005 | Order bukan miliknya    | REJECT / deteksi mismatch
-Loyal + tdk terbukti | 009    | ORD-QHM-009 | Water Heater 2.25jt     | REJECT (halus, CLV 141jt)
-Loyal + tdk terbukti | 039    | ORD-QHM-039 | Gunting Dahan 85rb      | REJECT (halus)
-Tidak lengkap        | -      | -           | -                       | Liaison minta data lebih
-Off-topic            | -      | -           | -                       | Guardrail blokir
+SKENARIO                         | CUST   | ORDER       | PRODUK                       | HASIL EKSPEKTASI
+---------------------------------|--------|-------------|------------------------------|-------------------------------
+Rusak transit < 1jt              | 011    | ORD-QHM-011 | Kabel Roll Panasonic         | Replacement + voucher 50rb
+Rusak transit < 1jt              | 019    | ORD-QHM-019 | Cat Kayu FTALIT              | Replacement + voucher 50rb
+Rusak transit < 1jt              | 020    | ORD-QHM-020 | Blender Philips HR2115       | Replacement + voucher 50rb
+Rusak transit < 1jt              | 023    | ORD-QHM-023 | Wallpaper Dinding 3D Foam    | Replacement + voucher 50rb
+Rusak transit < 1jt              | 031    | ORD-QHM-031 | Palu Kambing Tekiro          | Replacement + voucher 50rb
+Rusak transit < 1jt              | 032    | ORD-QHM-032 | Wastafel Gantung Toto        | Replacement + voucher 50rb
+Rusak transit < 1jt              | 034    | ORD-QHM-034 | Rice Cooker Miyako 1.8L      | Replacement + voucher 50rb
+Rusak transit < 1jt              | 037    | ORD-QHM-037 | Mixer Cosmos Stand           | Replacement + voucher 50rb
+Rusak transit < 1jt              | 038    | ORD-QHM-038 | Setrika Philips HD1173       | Replacement + voucher 50rb
+Rusak transit < 1jt              | 040    | ORD-QHM-040 | Thinner Impala 1L            | Replacement + voucher 50rb
+Rusak transit < 1jt              | 041    | ORD-QHM-041 | Kabel Antena TV Coaxial      | Replacement + voucher 50rb
+Rusak transit < 1jt              | 043    | ORD-QHM-043 | Teflon Maxim 24cm            | Replacement + voucher 50rb
+Rusak transit < 1jt              | 044    | ORD-QHM-044 | Gantungan Baju Kayu Set 10   | Replacement + voucher 50rb
+Rusak transit < 1jt              | 046    | ORD-QHM-046 | Sapu Lantai Nilon Kurma      | Replacement + voucher 50rb
+Rusak transit < 1jt              | 047    | ORD-QHM-047 | Selang Shower Toto 1.5M      | Replacement + voucher 50rb
+Rusak transit < 1jt              | 050    | ORD-QHM-050 | Rak Piring Aluminium 3 Susun | Replacement + voucher 50rb
+Rusak transit < 1jt (borderline) | 052    | ORD-QHM-052 | Meja Kerja Minimalis 950rb   | Replacement + voucher 50rb
+Rusak transit < 1jt              | 053    | ORD-QHM-053 | Meteran Tekiro 5M            | Replacement + voucher 50rb
+Rusak transit < 1jt              | 055    | ORD-QHM-055 | Bak Cuci Piring Stainless    | Replacement + voucher 50rb
+Rusak transit < 1jt              | 058    | ORD-QHM-058 | Paku Kayu 3 Inch (1kg)       | Replacement + voucher 50rb
+Rusak transit < 1jt              | 059    | ORD-QHM-059 | Pupuk Organik Cair 1L        | Replacement + voucher 50rb
+Rusak transit < 1jt              | 061    | ORD-QHM-061 | Granit Lantai Niro 60x60     | Replacement + voucher 50rb
+Rusak transit < 1jt              | 067    | ORD-QHM-067 | Keran Air Cabang Stainless   | Replacement + voucher 50rb
+Rusak transit < 1jt              | 068    | ORD-QHM-068 | Lampu LED Philips 12W Pack 4 | Replacement + voucher 50rb
+Rusak mahal + HITL               | 064    | ORD-QHM-064 | Kloset Toto 2.4jt            | HITL (email supervisor)
+Klaim tidak terbukti             | 006    | ORD-QHM-006 | Cat Tembok Dulux 5kg         | REJECT
+Klaim tidak terbukti             | 007    | ORD-QHM-007 | Keran Air Cabang Stainless   | REJECT
+Klaim tidak terbukti             | 010    | ORD-QHM-010 | Meja Makan Jati 3.5jt        | REJECT
+Klaim tidak terbukti             | 022    | ORD-QHM-022 | Stop Kontak Broco 4 Lubang   | REJECT
+Klaim tidak terbukti             | 025    | ORD-QHM-025 | Jet Shower Closet Toto       | REJECT
+Klaim tidak terbukti             | 028    | ORD-QHM-028 | Selang Air Anti Tekuk 15M    | REJECT
+Klaim tidak terbukti             | 029    | ORD-QHM-029 | Tang Kombinasi Tekiro        | REJECT
+Klaim tidak terbukti             | 035    | ORD-QHM-035 | Pot Bunga Keramik Putih      | REJECT
+Klaim tidak terbukti             | 049    | ORD-QHM-049 | Gergaji Kayu Tekiro 18 Inch  | REJECT
+Klaim tidak terbukti             | 056    | ORD-QHM-056 | Lukisan Dinding Canvas       | REJECT
+Klaim tidak terbukti             | 070    | ORD-QHM-070 | Meja Makan Jati 3.5jt        | REJECT
+Stok habis (pending)             | 999    | ORD-QHM-002 | Semen Instan Mortar 40kg     | Multi-choice (1/2)
+Stok habis + rusak (delivered)   | 062    | ORD-QHM-062 | Semen Instan Mortar 40kg     | Multi-choice (1/2)
+Minta refund ekspl. + HITL       | 017    | ORD-QHM-017 | Shower Set Toto 3.2jt        | Refund + HITL
+Salah kirim                      | 026    | ORD-QHM-026 | Kompor Gas Rinnai 2 Tungku   | Replacement kirim ulang
+Order fiktif                     | -      | ORD-QHM-999 | -                            | REJECT (tidak ditemukan)
+Data mismatch                    | 001    | ORD-QHM-005 | Order bukan miliknya         | REJECT / deteksi mismatch
+Loyal + tidak terbukti           | 009    | ORD-QHM-009 | Water Heater 2.25jt          | REJECT (halus, CLV 141jt)
+Loyal + tidak terbukti           | 012    | ORD-QHM-012 | Semen Tiga Roda 40kg         | REJECT (halus, CLV 65.9jt)
+Loyal + tidak terbukti           | 018    | ORD-QHM-018 | Kuas Cat Nippon Paint        | REJECT (halus)
+Loyal + tidak terbukti           | 021    | ORD-QHM-021 | Obeng Set Kenmaster 31 in 1  | REJECT (halus, CLV 110.7jt)
+Loyal + tidak terbukti           | 024    | ORD-QHM-024 | Lemari Pakaian Plastik Club  | REJECT (halus)
+Loyal + tidak terbukti           | 027    | ORD-QHM-027 | Keramik Lantai Mulia 40x40   | REJECT (halus, CLV 128.7jt)
+Loyal + tidak terbukti           | 030    | ORD-QHM-030 | Saklar Lampu Panasonic       | REJECT (halus, CLV 123.9jt)
+Loyal + tidak terbukti           | 033    | ORD-QHM-033 | Dempul Kayu Isamu 1kg        | REJECT (halus)
+Loyal + tidak terbukti           | 036    | ORD-QHM-036 | Kunci Inggris Tekiro 10 Inch | REJECT (halus)
+Loyal + tidak terbukti           | 039    | ORD-QHM-039 | Gunting Dahan Tekiro         | REJECT (halus, CLV 102jt)
+Loyal + tidak terbukti           | 042    | ORD-QHM-042 | Kursi Kantor Ergonomis 850rb | REJECT (halus)
+Loyal + tidak terbukti           | 045    | ORD-QHM-045 | Sekop Mini Taman Stainless   | REJECT (halus)
+Loyal + tidak terbukti           | 048    | ORD-QHM-048 | Bohlam LED Philips 19W       | REJECT (halus, CLV 81jt)
+Loyal + tidak terbukti           | 051    | ORD-QHM-051 | Pel Set Spin Mop             | REJECT (halus, CLV 95jt)
+Loyal + tidak terbukti           | 054    | ORD-QHM-054 | Fitting Lampu Panasonic      | REJECT (halus, CLV 60.4jt)
+Loyal + tidak terbukti           | 057    | ORD-QHM-057 | Tempat Sampah Injak 10L      | REJECT (halus, CLV 129.7jt)
+Loyal + tidak terbukti           | 060    | ORD-QHM-060 | Dispenser Miyako Hot&Normal  | REJECT (halus, CLV 119.4jt)
+Loyal + tidak terbukti           | 063    | ORD-QHM-063 | Rak Dinding Minimalis Kayu   | REJECT (halus, CLV 82.4jt)
+Loyal + tidak terbukti           | 066    | ORD-QHM-066 | Cat Tembok Dulux 5kg         | REJECT (halus, CLV 66.7jt)
+Loyal + tidak terbukti           | 069    | ORD-QHM-069 | Water Heater 2.25jt          | REJECT (halus, CLV 17.8jt)
+Tidak lengkap (tanpa order ID)   | -      | -           | -                            | Liaison minta data lebih
+Tidak lengkap (nama produk saja) | -      | -           | -                            | Liaison minta data lebih
+Off-topic                        | -      | -           | -                            | Guardrail blokir
 
 ================================================================================
