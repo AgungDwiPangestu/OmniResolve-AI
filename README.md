@@ -4,6 +4,11 @@
 
 Sistem Multi-Agent berbasis **ReAct (Reason + Act)** + **LangGraph** untuk automasi resolusi konflik pelanggan dan optimalisasi inventaris real-time di industri ritel. Dilengkapi sistem **RAG (Retrieval-Augmented Generation)** yang terus belajar dari setiap kasus yang diselesaikan.
 
+### Live Links (Telegram)
+- **Bot Telegram (Deployed di SumoPod):** [@OmniResolBot](https://t.me/OmniResolBot)
+- **Grup Gudang:** [t.me/gudangomniresolve](https://t.me/gudangomniresolve)
+- **Grup Kurir:** [t.me/kuriromniresolve](https://t.me/kuriromniresolve)
+
 ---
 
 ## Visualisasi Alur Pipeline
