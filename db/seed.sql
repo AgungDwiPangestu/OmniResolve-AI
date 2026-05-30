@@ -470,6 +470,70 @@ INSERT INTO stock_movements (product_id, movement_type, quantity, reason, order_
 ('PRD-013', 'in',   10, 'po_received',         NULL,          NOW() - INTERVAL '1 hour');
 
 
+-- =============================================================================
+-- TAMBAHAN: GRUP 2 — BARANG MAHAL RUSAK TRANSIT (HITL > Rp 1 JUTA) x10 skenario
+-- =============================================================================
+
+INSERT INTO customers (customer_id, customer_name, email, phone, address, is_loyal, lifetime_value_idr, total_orders, previous_complaints) VALUES
+('CUST-071', 'Ahmad Farid', 'ahmad.farid71@email.com', '081234560071', 'Jl. Kaliurang Km 9, Ngaglik, Sleman', FALSE, 52000000.00, 8, 1),
+('CUST-072', 'Bunga Rahayu', 'bunga.rahayu72@email.com', '081234560072', 'Jl. Gejayan No. 72, Yogyakarta', FALSE, 78000000.00, 12, 0),
+('CUST-073', 'Chandra Wirawan', 'chandra.wirawan73@email.com', '081234560073', 'Jl. Magelang Km 8, Sleman', TRUE, 35000000.00, 6, 2),
+('CUST-074', 'Dewi Prasasti', 'dewi.prasasti74@email.com', '081234560074', 'Jl. Monjali No. 74, Sleman', FALSE, 67000000.00, 15, 1),
+('CUST-075', 'Eko Nurcahyo', 'eko.nurcahyo75@email.com', '081234560075', 'Jl. Godean Km 5, Sleman', FALSE, 120000000.00, 20, 0),
+('CUST-076', 'Fiona Anggraini', 'fiona.anggraini76@email.com', '081234560076', 'Jl. Wates Km 3, Bantul', FALSE, 43000000.00, 10, 2),
+('CUST-077', 'Gunawan Susilo', 'gunawan.susilo77@email.com', '081234560077', 'Jl. Solo Km 15, Sleman', TRUE, 89000000.00, 18, 1),
+('CUST-078', 'Harini Prastiwi', 'harini.prastiwi78@email.com', '081234560078', 'Jl. Parangtritis Km 8, Bantul', FALSE, 31000000.00, 5, 0),
+('CUST-079', 'Irfan Maulana', 'irfan.maulana79@email.com', '081234560079', 'Jl. Ringroad Selatan No. 79, Bantul', FALSE, 95000000.00, 22, 3),
+('CUST-080', 'Jasmine Kusuma', 'jasmine.kusuma80@email.com', '081234560080', 'Jl. Kusumanegara No. 80, Yogyakarta', TRUE, 58000000.00, 9, 0);
+
+INSERT INTO products (product_id, category, product_name, price_idr, stock_available, warehouse_location, warehouse_condition) VALUES
+('PRD-071', 'Elektronik', 'AC Split Daikin 1 PK FTKC25UVM4', 4500000.00, 15, 'Gudang Elektronik H2', 'good'),
+('PRD-072', 'Elektronik', 'Mesin Cuci Samsung WW80T Front Loading 8kg', 3200000.00, 8, 'Gudang Elektronik H2', 'good'),
+('PRD-073', 'Sanitary', 'Bathtub Acrylic Freestanding Toto FBY1541', 2800000.00, 12, 'Gudang Sanitary D3', 'good'),
+('PRD-074', 'Elektronik', 'Kulkas 2 Pintu Polytron PRF 280L', 3700000.00, 6, 'Gudang Elektronik H2', 'good'),
+('PRD-075', 'Furnitur', 'Kitchen Set Dapur Minimalis HPL Putih 240cm', 6500000.00, 4, 'Gudang Furnitur F1', 'good'),
+('PRD-076', 'Sanitary', 'Wastafel Tanam Kohler Caxton K-2210 600mm', 1850000.00, 20, 'Gudang Sanitary D3', 'good'),
+('PRD-077', 'Pintu & Jendela', 'Pintu UPVC WinTech Premium 90x210cm', 2500000.00, 10, 'Gudang Material B2', 'good'),
+('PRD-078', 'Sanitary', 'Shower Enclosure Kaca Tempered 8mm 90x90cm', 3900000.00, 7, 'Gudang Sanitary D3', 'good'),
+('PRD-079', 'Elektronik', 'TV LED Samsung 55 Inch QA55Q70CAKXXD 4K QLED', 7200000.00, 5, 'Gudang Elektronik H2', 'good'),
+('PRD-080', 'Pompa & Tangki', 'Pompa Air Submersible Grundfos SP5-8 1.5HP', 1500000.00, 18, 'Gudang Material B2', 'good');
+
+INSERT INTO orders (order_id, customer_id, order_date, total_amount_idr, status) VALUES
+('ORD-QHM-071', 'CUST-071', NOW() - INTERVAL '5 days', 4500000.00, 'delivered'),
+('ORD-QHM-072', 'CUST-072', NOW() - INTERVAL '6 days', 3200000.00, 'delivered'),
+('ORD-QHM-073', 'CUST-073', NOW() - INTERVAL '4 days', 2800000.00, 'delivered'),
+('ORD-QHM-074', 'CUST-074', NOW() - INTERVAL '7 days', 3700000.00, 'delivered'),
+('ORD-QHM-075', 'CUST-075', NOW() - INTERVAL '8 days', 6500000.00, 'delivered'),
+('ORD-QHM-076', 'CUST-076', NOW() - INTERVAL '3 days', 1850000.00, 'delivered'),
+('ORD-QHM-077', 'CUST-077', NOW() - INTERVAL '5 days', 2500000.00, 'delivered'),
+('ORD-QHM-078', 'CUST-078', NOW() - INTERVAL '9 days', 3900000.00, 'delivered'),
+('ORD-QHM-079', 'CUST-079', NOW() - INTERVAL '4 days', 7200000.00, 'delivered'),
+('ORD-QHM-080', 'CUST-080', NOW() - INTERVAL '6 days', 1500000.00, 'delivered');
+
+INSERT INTO order_items (order_id, product_id, quantity, subtotal_idr) VALUES
+('ORD-QHM-071', 'PRD-071', 1, 4500000.00),
+('ORD-QHM-072', 'PRD-072', 1, 3200000.00),
+('ORD-QHM-073', 'PRD-073', 1, 2800000.00),
+('ORD-QHM-074', 'PRD-074', 1, 3700000.00),
+('ORD-QHM-075', 'PRD-075', 1, 6500000.00),
+('ORD-QHM-076', 'PRD-076', 1, 1850000.00),
+('ORD-QHM-077', 'PRD-077', 1, 2500000.00),
+('ORD-QHM-078', 'PRD-078', 1, 3900000.00),
+('ORD-QHM-079', 'PRD-079', 1, 7200000.00),
+('ORD-QHM-080', 'PRD-080', 1, 1500000.00);
+
+INSERT INTO deliveries (tracking_id, order_id, courier_name, status, condition_on_pickup, damage_reported_by_courier, delivery_logs) VALUES
+('QHM-DEL-0710001', 'ORD-QHM-071', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-24 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-24 16:00", "status": "Terkirim — cover outdoor unit AC retak besar akibat benturan keras saat bongkar muat", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0720002', 'ORD-QHM-072', 'SiCepat', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-23 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-23 15:30", "status": "Terkirim — panel kontrol mesin cuci penyok dan kaca pintu retak akibat tertimpa kargo berat", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0730003', 'ORD-QHM-073', 'Indah Logistik', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-25 08:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-25 14:00", "status": "Terkirim — bathtub retak panjang 30cm di badan akibat kargo ditumpuk dari atas tanpa pengaman", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0740004', 'ORD-QHM-074', 'Dakota Cargo', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-22 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-22 17:00", "status": "Terkirim — kulkas jatuh dari truk saat bongkar, kompresor berbunyi abnormal dan pintu freezer tidak bisa menutup", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0750005', 'ORD-QHM-075', 'Armada Qhomemart', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-21 08:00", "status": "Barang diserahkan ke armada internal", "location": "Yogyakarta"}, {"time": "2026-05-21 15:00", "status": "Terkirim — pintu kabinet kitchen set patah dan HPL terkelupas akibat basah selama pengiriman hujan lebat", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0760006', 'ORD-QHM-076', 'GrabExpress', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-26 10:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-26 14:30", "status": "Terkirim — wastafel retak di tepi kanan dan lubang pembuangan pecah akibat benturan tanpa pelindung", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0770007', 'ORD-QHM-077', 'GoSend', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-24 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-24 13:30", "status": "Terkirim — frame pintu UPVC bengkok parah karena terhimpit di kargo, engsel copot, tidak bisa dipasang", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0780008', 'ORD-QHM-078', 'JNE Trucking', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-20 08:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-20 16:00", "status": "Terkirim — panel kaca shower enclosure retak besar dan profil aluminium bengkok, tidak aman dipasang", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0790009', 'ORD-QHM-079', 'Indah Logistik', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-25 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-25 17:00", "status": "Terkirim — layar TV LED pecah di sudut kanan bawah akibat tertimpa kargo lain, tidak bisa menampilkan gambar", "location": "Yogyakarta"}]'::jsonb),
+('QHM-DEL-0800010', 'ORD-QHM-080', 'J&T Express', 'delivered_with_damage_report', 'intact', TRUE, '[{"time": "2026-05-23 09:00", "status": "Barang diserahkan ke kurir", "location": "Yogyakarta"}, {"time": "2026-05-23 15:00", "status": "Terkirim — impeller pompa submersible retak dan poros bengkok akibat kargo terlempar selama perjalanan", "location": "Yogyakarta"}]'::jsonb);
+
 INSERT INTO complaint_sessions (
     session_id, raw_input, customer_id, order_id, complaint_type,
     sentiment_score, claim_valid, stock_status, decision_type,

@@ -36,12 +36,14 @@ def load_group_chats() -> dict:
             pass
     return {"warehouse_chat_id": None, "courier_chat_id": None}
 
-def save_group_chats(data: dict):
+def save_group_chats(data: dict) -> bool:
     try:
         with open(GROUP_CHATS_FILE, "w") as f:
             json.dump(data, f, indent=2)
+        return True
     except Exception as e:
         logger.error("telegram.save_group_chats_error", error=str(e))
+        return False
 
 
 async def send_to_warehouse_group(bot_or_context, session_id: str, order_id: str):
@@ -59,6 +61,9 @@ async def send_to_warehouse_group(bot_or_context, session_id: str, order_id: str
     # Dukung keduanya: context (dari handler) atau Bot instance langsung
     from telegram import Bot as _TelegramBot
     bot = bot_or_context if isinstance(bot_or_context, _TelegramBot) else bot_or_context.bot
+
+    from src.tools.inventory_tools import normalize_order_id
+    order_id = normalize_order_id(order_id)
 
     settings = get_settings()
     try:
@@ -304,8 +309,15 @@ async def cmd_register_warehouse(update: Update, context: ContextTypes.DEFAULT_T
         
     data = load_group_chats()
     data["warehouse_chat_id"] = chat_id
-    save_group_chats(data)
-    
+    saved = save_group_chats(data)
+
+    if not saved:
+        await update.message.reply_text(
+            "⚠️ *Gagal menyimpan registrasi gudang!*\n\nTerjadi error saat menulis ke file konfigurasi. Hubungi admin.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+
     await update.message.reply_text(
         f"🚀 *Grup Gudang Berhasil Didaftarkan!*\n\n"
         f"• *Nama Grup:* `{chat_title}`\n"
@@ -319,16 +331,23 @@ async def cmd_register_courier(update: Update, context: ContextTypes.DEFAULT_TYP
     """Handler untuk mendaftarkan grup kurir (Courier)."""
     chat_id = update.effective_chat.id
     chat_title = update.effective_chat.title or "Grup"
-    
+
     # Pastikan ini dipanggil di grup/supergrup
     if update.effective_chat.type not in ["group", "supergroup"]:
         await update.message.reply_text("⚠️ Perintah ini hanya dapat dijalankan di dalam grup Telegram.")
         return
-        
+
     data = load_group_chats()
     data["courier_chat_id"] = chat_id
-    save_group_chats(data)
-    
+    saved = save_group_chats(data)
+
+    if not saved:
+        await update.message.reply_text(
+            "⚠️ *Gagal menyimpan registrasi kurir!*\n\nTerjadi error saat menulis ke file konfigurasi. Hubungi admin.",
+            parse_mode=ParseMode.MARKDOWN
+        )
+        return
+
     await update.message.reply_text(
         f"🚚 *Grup Kurir Berhasil Didaftarkan!*\n\n"
         f"• *Nama Grup:* `{chat_title}`\n"
@@ -769,6 +788,7 @@ async def _run_pipeline(update, context, session, chat_id: int):
         )
         decision = final_state.get("compensation_decision")
         audit = final_state.get("audit_result")
+        final_complaint = final_state.get("complaint") or {}
 
         # Simpan ke DB untuk Dashboard Admin
         from src.api.routers.complaints import save_session_to_db
@@ -819,8 +839,9 @@ async def _run_pipeline(update, context, session, chat_id: int):
             )
 
             # Kirim perintah pengambilan barang ke Gudang secara otomatis jika merupakan replacement dan di bawah 1 juta (tidak butuh human approval)
-            if decision['decision_type'] == 'replacement' and not decision.get("requires_human_approval") and session.order_id and session.order_id != "unknown":
-                await send_to_warehouse_group(context, session_id, session.order_id)
+            resolved_order_id = final_complaint.get("order_id") or session.order_id
+            if decision['decision_type'] == 'replacement' and not decision.get("requires_human_approval") and resolved_order_id and resolved_order_id != "unknown":
+                await send_to_warehouse_group(context, session_id, resolved_order_id)
 
         # Tombol untuk komplain baru
         keyboard = [[InlineKeyboardButton("🔄 Komplain Baru", callback_data="new_complaint")]]
@@ -898,7 +919,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parts = query.data.split(":")
         session_id = parts[1]
         order_id = parts[2]
-        
+
+        from src.tools.inventory_tools import normalize_order_id
+        order_id = normalize_order_id(order_id)
+
         # Ambil detail dari database PostgreSQL
         settings = get_settings()
         import asyncpg

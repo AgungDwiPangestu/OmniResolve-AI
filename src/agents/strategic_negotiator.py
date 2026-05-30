@@ -260,6 +260,7 @@ BATAS HITL: Rp {settings.hitl_threshold_idr:,.0f}
             or compensation_value > settings.hitl_threshold_idr
             or option_exceeds
             or (decision_type == "refund" and product_price > settings.hitl_threshold_idr)
+            or (decision_type == "replacement" and product_price > settings.hitl_threshold_idr)
             or decision_type == "multi_choice"
         )
 

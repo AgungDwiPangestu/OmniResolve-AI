@@ -348,7 +348,7 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
         managers = ["haris.sandi23@students.utdi.ac.id", "agung.dwi23@students.utdi.ac.id"]
         msg["To"] = ", ".join(managers)
 
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=3.0) as server:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as server:
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_pass)
             server.send_message(msg)

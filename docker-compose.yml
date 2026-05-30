@@ -34,6 +34,7 @@ services:
   # FastAPI — Backend + LangGraph Orchestrator
   # ---------------------------------------------------------------------------
   api:
+    image: saaandd/omniresolve-ai:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -50,7 +51,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./src:/app/src  # Hot-reload di dev (override di prod)
+      - ./src/telegram_bot/group_chats.json:/app/src/telegram_bot/group_chats.json
 
   # ---------------------------------------------------------------------------
   # Claude Office Visualizer - GUI Log Tracker
