@@ -257,15 +257,70 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
     d_value = decision['compensation_value_idr'] if decision else 0
     d_reasoning = decision['reasoning'] if decision else '-'
 
+    # Lookup product price for replacement decisions so supervisor sees full cost
+    product_price = 0.0
+    product_name = ""
+    complaint = state.get("complaint") or {}
+    if d_type == "replacement" and complaint.get("order_id"):
+        try:
+            from src.tools.inventory_tools import check_inventory_status
+            inv = await check_inventory_status(complaint["order_id"])
+            product_price = float(inv.get("price_idr", 0))
+            product_name = inv.get("product_name", "")
+        except Exception:
+            pass
+
+    # Build cost breakdown rows for email
+    if d_type == "replacement" and product_price > 0:
+        total_cost = product_price + d_value
+        cost_rows = f"""
+                        <tr>
+                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Produk Pengganti</strong></td>
+                            <td style="padding: 8px 0; color: #2b2d42; font-size: 14px;">{product_name}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Harga Barang (Replacement)</strong></td>
+                            <td style="padding: 8px 0; color: #e63946; font-size: 14px; font-weight: bold;">Rp {product_price:,.0f}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Voucher Tambahan (Loyalitas)</strong></td>
+                            <td style="padding: 8px 0; color: #2b2d42; font-size: 14px;">Rp {d_value:,.0f}</td>
+                        </tr>
+                        <tr style="border-top: 2px solid #dee2e6;">
+                            <td style="padding: 10px 0 8px; color: #1d3557; font-size: 15px;"><strong>Total Biaya ke Perusahaan</strong></td>
+                            <td style="padding: 10px 0 8px; color: #e63946; font-size: 18px; font-weight: bold;">Rp {total_cost:,.0f}</td>
+                        </tr>"""
+        total_value_display = total_cost
+    else:
+        cost_rows = f"""
+                        <tr>
+                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Total Nilai Kompensasi</strong></td>
+                            <td style="padding: 8px 0; color: #e63946; font-size: 16px; font-weight: bold;">Rp {d_value:,.0f}</td>
+                        </tr>"""
+        total_value_display = d_value
+
     # Fallback plain text
-    text_body = (
-        f"APPROVAL REQUIRED — OmniResolve-AI\n\n"
-        f"Session ID: {session_id}\n"
-        f"Keputusan AI: {d_type}\n"
-        f"Nilai Kompensasi: Rp {d_value:,.0f}\n\n"
-        f"Alasan (Reasoning):\n{d_reasoning}\n\n"
-        f"Silakan login ke dashboard untuk melakukan approval."
-    )
+    if d_type == "replacement" and product_price > 0:
+        text_body = (
+            f"APPROVAL REQUIRED — OmniResolve-AI\n\n"
+            f"Session ID: {session_id}\n"
+            f"Keputusan AI: {d_type}\n"
+            f"Produk Pengganti: {product_name}\n"
+            f"Harga Barang (Replacement): Rp {product_price:,.0f}\n"
+            f"Voucher Tambahan (Loyalitas): Rp {d_value:,.0f}\n"
+            f"Total Biaya ke Perusahaan: Rp {product_price + d_value:,.0f}\n\n"
+            f"Alasan (Reasoning):\n{d_reasoning}\n\n"
+            f"Silakan login ke dashboard untuk melakukan approval."
+        )
+    else:
+        text_body = (
+            f"APPROVAL REQUIRED — OmniResolve-AI\n\n"
+            f"Session ID: {session_id}\n"
+            f"Keputusan AI: {d_type}\n"
+            f"Nilai Kompensasi: Rp {d_value:,.0f}\n\n"
+            f"Alasan (Reasoning):\n{d_reasoning}\n\n"
+            f"Silakan login ke dashboard untuk melakukan approval."
+        )
 
     # Beautiful HTML Email
     html_body = f"""
@@ -302,10 +357,7 @@ async def hitl_supervisor_node(state: GraphState) -> dict:
                             <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Rekomendasi AI</strong></td>
                             <td style="padding: 8px 0; color: #2b2d42; font-size: 14px; text-transform: uppercase; font-weight: bold;">{d_type}</td>
                         </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;"><strong>Total Nilai</strong></td>
-                            <td style="padding: 8px 0; color: #e63946; font-size: 16px; font-weight: bold;">Rp {d_value:,.0f}</td>
-                        </tr>
+                        {cost_rows}
                     </table>
                 </div>
 

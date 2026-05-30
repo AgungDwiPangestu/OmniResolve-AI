@@ -821,10 +821,35 @@ async def _run_pipeline(update, context, session, chat_id: int):
                 claim_icon = "✅" if audit.get("claim_valid") else "⛔"
                 audit_status = f"\n• Validasi klaim: {claim_icon} {'Valid' if audit.get('claim_valid') else 'Tidak Valid'}"
 
+            # Untuk replacement: tampilkan harga barang + voucher + total biaya
+            compensation_detail = ""
+            if decision['decision_type'] == 'replacement':
+                resolved_order_id_for_price = final_complaint.get("order_id") or session.order_id
+                product_price_tg = 0.0
+                if resolved_order_id_for_price and resolved_order_id_for_price != "unknown":
+                    try:
+                        from src.tools.inventory_tools import check_inventory_status
+                        inv = await check_inventory_status(resolved_order_id_for_price)
+                        product_price_tg = float(inv.get("price_idr", 0))
+                    except Exception:
+                        pass
+                voucher_val = decision['compensation_value_idr']
+                if product_price_tg > 0:
+                    total_tg = product_price_tg + voucher_val
+                    compensation_detail = (
+                        f"\n• Harga barang (replacement): Rp {product_price_tg:,.0f}"
+                        + (f"\n• Voucher loyalitas: Rp {voucher_val:,.0f}" if voucher_val > 0 else "")
+                        + f"\n• *Total ganti rugi: Rp {total_tg:,.0f}*"
+                    )
+                else:
+                    compensation_detail = f"\n• Nilai kompensasi: Rp {voucher_val:,.0f}"
+            else:
+                compensation_detail = f"\n• Nilai kompensasi: Rp {decision['compensation_value_idr']:,.0f}"
+
             detail_text = (
                 f"📋 *Detail Keputusan:*\n"
-                f"• Tipe: {decision_label}\n"
-                f"• Nilai kompensasi: Rp {decision['compensation_value_idr']:,.0f}"
+                f"• Tipe: {decision_label}"
+                f"{compensation_detail}"
                 f"{audit_status}\n"
                 f"• Ref: `{session_id}`\n\n"
                 f"💡 _Anda dapat memantau status atau detail tindak lanjut laporan ini kapan saja dengan mengetik:_ `/status {session_id}`"
