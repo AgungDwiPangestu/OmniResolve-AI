@@ -263,6 +263,37 @@ podman logs --tail 50 omni_api
 
 ---
 
+## Ganti Email Supervisor (HITL Notification)
+
+Ketika nilai kompensasi melebihi Rp 1.000.000, sistem secara otomatis mengirim email notifikasi ke supervisor untuk approval manual. Alamat email tujuan di-hardcode di:
+
+**File:** `src/agents/supply_chain_orchestrator.py`  
+**Baris:** 348
+
+```python
+managers = ["haris.sandi23@students.utdi.ac.id", "agung.dwi23@students.utdi.ac.id"]
+```
+
+Ganti daftar email tersebut dengan alamat email penguji/juri yang ingin menerima notifikasi. Boleh satu atau lebih email:
+
+```python
+managers = ["email-anda@domain.com"]
+```
+
+Setelah mengganti, rebuild image dan deploy ulang:
+
+```bash
+# Podman (lokal):
+podman-compose build api && podman-compose up -d api
+
+# Docker (VPS):
+docker compose build api && docker compose up -d api
+```
+
+> Pastikan variabel SMTP di `.env` sudah dikonfigurasi (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`) agar email berhasil terkirim.
+
+---
+
 ## Koneksi ke Frontend (OpenAI-Compatible)
 
 Arahkan frontend atau tool apapun ke backend ini:
